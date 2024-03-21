@@ -15,9 +15,8 @@
       package = with pkgs; traefik;
 
       staticConfigOptions = {
+        accessLog.filePath = "/var/log/traefik-access.log";
         api.dashboard = true;
-        log.level = "info";
-        providers.docker.exposedByDefault = false;
 
         certificatesResolvers.cloudflare.acme = {
           storage = "${config.services.traefik.dataDir}/acme.json";
@@ -46,6 +45,16 @@
         global = {
           checkNewVersion = false;
           sendAnonymousUsage = false;
+        };
+
+        log = {
+          filePath = "/var/log/traefik.log";
+          level = "INFO";
+        };
+
+        providers.docker = {
+          exposedByDefault = false;
+          watch = true;
         };
       };
     };
