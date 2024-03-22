@@ -3,6 +3,11 @@
   ...
 }:
 {
+  networking.firewall = {
+    allowedTCPPorts = [ 53 ];
+    firewall.allowedUDPPorts = [ 53 ];
+  };
+
   services = {
     adguardhome = {
       allowDHCP = false;
