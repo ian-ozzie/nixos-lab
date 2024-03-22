@@ -9,6 +9,15 @@
     "docker"
   ];
 
+  networking.firewall = {
+    allowedUDPPorts = [ 443 ];
+
+    allowedTCPPorts = [
+      80
+      443
+    ];
+  };
+
   services = {
     traefik = {
       enable = true;
