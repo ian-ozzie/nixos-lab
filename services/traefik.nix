@@ -1,69 +1,63 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }:
+let
+  cfg = config.ozzie.lab.traefik;
+in
 {
-  users.users.traefik.extraGroups = [
-    "acme"
-    "docker"
-  ];
-
-  networking.firewall = {
-    allowedUDPPorts = [ 443 ];
-
-    allowedTCPPorts = [
-      80
-      443
-    ];
+  options.ozzie.lab.traefik = {
+    enable = lib.mkEnableOption "opinionated traefik config";
   };
 
-  services = {
-    traefik = {
-      enable = true;
-      package = with pkgs; traefik;
+  config = lib.mkIf cfg.enable {
+    services = {
+      traefik = {
+        enable = true;
+        package = with pkgs; traefik;
 
-      staticConfigOptions = {
-        accessLog.filePath = "/var/log/traefik-access.log";
-        api.dashboard = true;
-
-        certificatesResolvers.cloudflare.acme = {
-          storage = "${config.services.traefik.dataDir}/acme.json";
-
-          dnsChallenge = {
-            provider = "cloudflare";
-            resolvers = [ "1.1.1.1:53" ];
+        dynamicConfigOptions.http = {
+          routers = {
+            traefik = {
+              entryPoints = "websecure";
+              priority = "10";
+              rule = "Host(`traefik.${config.ozzie.lab.host.bind.domain}`)";
+              service = "api@internal";
+            };
           };
         };
 
-        entryPoints = {
-          web = {
-            address = ":80";
+        staticConfigOptions = {
+          accessLog.filePath = "/data/services/traefik/traefik-access.log";
+          api.dashboard = true;
 
-            http.redirections.entryPoint = {
-              scheme = "https";
-              to = "websecure";
+          entryPoints = {
+            web = {
+              address = "127.0.0.80:80";
+            };
+
+            websecure = {
+              address = "${config.ozzie.lab.host.bind.ip}:443";
+              http.tls = true;
             };
           };
 
-          websecure = {
-            address = ":443";
+          global = {
+            checkNewVersion = false;
+            sendAnonymousUsage = false;
           };
-        };
 
-        global = {
-          checkNewVersion = false;
-          sendAnonymousUsage = false;
-        };
+          log = {
+            filePath = "/data/services/traefik/traefik.log";
+            level = "INFO";
+          };
 
-        log = {
-          filePath = "/var/log/traefik.log";
-          level = "INFO";
-        };
-
-        providers.docker = {
-          exposedByDefault = false;
-          watch = true;
+          providers.docker = {
+            exposedByDefault = false;
+            watch = true;
+          };
         };
       };
     };
