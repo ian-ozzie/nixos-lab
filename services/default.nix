@@ -1,5 +1,5 @@
 {
   imports = [
-    ./services
+    ./traefik.nix
   ];
 }
