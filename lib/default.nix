@@ -1,12 +1,12 @@
-# https://github.com/arnarg/config/blob/3ea96e9c1df0251add95404c64644d3411733ffb/lib/default.nix
+# Based on: https://github.com/arnarg/config/blob/3ea96e9c1df0251add95404c64644d3411733ffb/lib/default.nix
 let
   inherit (builtins)
-    readDir
-    hasAttr
     attrNames
-    filter
     concatMap
+    filter
+    hasAttr
     listToAttrs
+    readDir
     ;
 
   loadHosts =
@@ -35,23 +35,21 @@ in
   # include it if it has a default.nix.
   genNixOSHosts =
     {
-      inputs,
-      directory ? "${inputs.self}/hosts",
-      nixpkgs ? inputs.nixpkgs,
       builder ? nixpkgs.lib.nixosSystem,
-      specialArgs ? { },
-      baseModules ? [ ],
+      coreModules ? [ ],
+      directory ? "${inputs.self}/hosts",
+      inputs,
+      nixpkgs ? inputs.nixpkgs,
       overlays ? [ ],
-      config ? {
-        allowUnfree = true;
-      },
+      specialArgs ? { },
     }:
     let
       mkHost =
         {
-          system,
-          modules,
+          configuration,
           hostname,
+          modules,
+          system,
         }:
         builder {
           inherit system;
@@ -62,98 +60,24 @@ in
           // specialArgs;
 
           modules = [
-            (
-              { ... }:
-              {
-                networking.hostName = hostname;
+            configuration
 
-                nixpkgs = {
-                  inherit overlays config;
-                };
-              }
-            )
+            {
+              networking.hostName = hostname;
+
+              nixpkgs = {
+                inherit overlays;
+              };
+            }
           ]
-          ++ baseModules
+          ++ coreModules
           ++ modules;
         };
     in
     listToAttrs (
       map (conf: {
         name = conf.hostname;
-        value = mkHost (removeAttrs conf [ "home" ]);
-      }) (loadHosts directory inputs)
-    );
-
-  # Discover home-manager configurations.
-  # It will find all sub-directories in `directory` and
-  # include it if it has a default.nix.
-  genHomeHosts =
-    {
-      inputs,
-      user,
-      directory ? "${inputs.self}/hosts",
-      nixpkgs ? inputs.nixpkgs,
-      home ? inputs.home,
-      builder ? home.lib.homeManagerConfiguration,
-      specialArgs ? { },
-      baseModules ? [ ],
-      overlays ? [ ],
-      config ? {
-        allowUnfree = true;
-      },
-    }:
-    let
-      homeHosts = concatMap (
-        h:
-        if (hasAttr "home" h) then
-          [
-            (
-              (removeAttrs h [
-                "home"
-                "modules"
-              ])
-              // h.home
-            )
-          ]
-        else
-          [ ]
-      ) (loadHosts directory inputs);
-
-      mkHost =
-        {
-          system,
-          modules,
-          hostname,
-        }:
-        let
-          pkgs = import nixpkgs {
-            inherit system config overlays;
-          };
-        in
-        builder {
-          inherit pkgs;
-          extraSpecialArgs = {
-            inherit inputs;
-          }
-          // specialArgs;
-
-          modules = [
-            (
-              { lib, ... }:
-              {
-                home.username = lib.mkDefault user;
-                home.homeDirectory = lib.mkDefault "/home/${user}";
-              }
-            )
-          ]
-          ++ baseModules
-          ++ modules;
-        };
-    in
-    listToAttrs (
-      map (conf: {
-        name = "${user}@${conf.hostname}";
         value = mkHost conf;
-      }) homeHosts
+      }) (loadHosts directory inputs)
     );
 }
