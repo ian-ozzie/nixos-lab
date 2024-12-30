@@ -6,7 +6,7 @@
   options.ozzie.lab.host = {
     bind = {
       ip = lib.mkOption {
-        default = "127.0.0.1";
+        default = "127.0.0.80";
         description = "IP to bind services to";
         type = lib.types.str;
       };
