@@ -30,7 +30,6 @@ in
         };
 
         staticConfigOptions = {
-          accessLog.filePath = "/data/services/traefik/traefik-access.log";
           api.dashboard = true;
 
           entryPoints = {
@@ -47,16 +46,6 @@ in
           global = {
             checkNewVersion = false;
             sendAnonymousUsage = false;
-          };
-
-          log = {
-            filePath = "/data/services/traefik/traefik.log";
-            level = "INFO";
-          };
-
-          providers.docker = {
-            exposedByDefault = false;
-            watch = true;
           };
         };
       };
