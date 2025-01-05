@@ -5,8 +5,10 @@
 # include it if it has a default.nix.
 {
   builder ? nixpkgs.lib.nixosSystem,
+  coreHomeModules ? [ ],
   coreModules ? [ ],
   directory ? "${inputs.self}/hosts",
+  extraSpecialArgs ? { },
   inputs,
   nixpkgs ? inputs.nixpkgs,
   overlays ? [ ],
@@ -45,6 +47,8 @@ let
   mkHost =
     {
       hostname,
+      home ? false,
+      homeModules ? [ ],
       modules ? [ ],
       system,
     }:
@@ -61,7 +65,14 @@ let
         }
       ]
       ++ coreModules
-      ++ modules;
+      ++ modules
+      ++ nixpkgs.lib.optional home inputs.home-manager.nixosModules.home-manager
+      ++ nixpkgs.lib.optional home {
+        home-manager = {
+          extraSpecialArgs = extraSpecialArgs // specialArgs;
+          sharedModules = coreHomeModules ++ homeModules;
+        };
+      };
     };
 in
 listToAttrs (
