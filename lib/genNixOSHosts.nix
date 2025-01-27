@@ -46,10 +46,12 @@ let
 
   mkHost =
     {
+      allowUnfree ? false,
       hostname,
       home ? false,
       homeModules ? [ ],
       modules ? [ ],
+      state ? "24.11",
       system,
     }:
     builder {
@@ -58,9 +60,12 @@ let
       modules = [
         {
           networking.hostName = hostname;
+          system.stateVersion = state;
 
           nixpkgs = {
             inherit overlays;
+
+            config = { inherit allowUnfree; };
           };
         }
       ]
