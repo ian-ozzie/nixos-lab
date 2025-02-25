@@ -15,6 +15,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    networking.nameservers = [ "127.0.0.80" ];
+
     services = {
       adguardhome = {
         allowDHCP = false;
