@@ -61,5 +61,11 @@ in
         };
       };
     };
+
+    systemd = {
+      tmpfiles.rules = [
+        "d /data/services/syncthing 0700 ${cfg.user} ${cfg.group}"
+      ];
+    };
   };
 }
