@@ -17,5 +17,13 @@
         type = lib.types.str;
       };
     };
+
+    shared = {
+      domain = lib.mkOption {
+        default = "localhost";
+        description = "Hostname shared services are bound to";
+        type = lib.types.str;
+      };
+    };
   };
 }
