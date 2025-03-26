@@ -50,5 +50,13 @@ in
         };
       };
     };
+
+    systemd = {
+      services.traefik.serviceConfig.WorkingDirectory = "/data/services/traefik";
+
+      tmpfiles.rules = [
+        "d /data/services/traefik 0700 traefik traefik"
+      ];
+    };
   };
 }
