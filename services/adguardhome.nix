@@ -12,6 +12,12 @@ in
 {
   options.ozzie.lab.adguardhome = {
     enable = lib.mkEnableOption "opinionated adguardhome config";
+
+    bind = lib.mkOption {
+      default = [ "127.0.0.80" ];
+      description = "Default host to bind dns resolver to";
+      type = lib.types.listOf lib.types.str;
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -33,7 +39,7 @@ in
           users = [ ];
 
           dns = {
-            bind_hosts = [ "127.0.0.80" ];
+            bind_hosts = cfg.bind;
             fallback_dns = [ "https://9.9.9.9/dns-query" ];
             ports = "53";
             upstream_dns = [ "https://1.1.1.1/dns-query" ];
