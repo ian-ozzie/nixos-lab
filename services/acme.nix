@@ -46,6 +46,12 @@ in
       };
     };
 
+    systemd = {
+      tmpfiles.rules = [
+        "d /data/services/acme 0700 acme acme"
+      ];
+    };
+
     users.users = {
       traefik = lib.mkIf traefik.enable {
         extraGroups = [ "acme" ];
