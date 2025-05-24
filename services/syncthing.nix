@@ -27,6 +27,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    networking.firewall.allowedTCPPorts = [ 22000 ];
+
     services = {
       syncthing = {
         inherit (cfg) group user;
