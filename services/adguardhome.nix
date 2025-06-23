@@ -40,6 +40,10 @@ in
 
           dns = {
             bind_hosts = cfg.bind;
+            cache_optimistic = true;
+            cache_size = 16777216;
+            cache_ttl_max = 14400;
+            cache_ttl_min = 900;
             fallback_dns = [ "https://9.9.9.9/dns-query" ];
             ports = "53";
             upstream_dns = [ "https://1.1.1.1/dns-query" ];
