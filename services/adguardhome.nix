@@ -38,14 +38,30 @@ in
           theme = "dark";
           users = [ ];
 
+          clients = {
+            persistent = [
+              {
+                ids = [ "127.0.0.1" ];
+                name = "Local";
+                uid = "0197ee4d-041a-7ce9-af4f-a11bfdce5193";
+                use_global_blocked_services = true;
+                use_global_settings = true;
+              }
+            ];
+          };
+
           dns = {
+            aaaa_disabled = true;
+            allowed_clients = [ "127.0.0.1" ];
             bind_hosts = cfg.bind;
             cache_optimistic = true;
             cache_size = 16777216;
             cache_ttl_max = 14400;
             cache_ttl_min = 900;
+            enable_dnssec = true;
             fallback_dns = [ "https://9.9.9.9/dns-query" ];
             ports = "53";
+            ratelimit_whitelist = [ "127.0.0.1" ];
             upstream_dns = [ "https://1.1.1.1/dns-query" ];
 
             bootstrap_dns = [
@@ -55,8 +71,17 @@ in
           };
 
           filtering = {
+            blocking_mode = "refused";
             filtering_enabled = true;
             filters_update_interval = 168;
+          };
+
+          querylog = {
+            interval = "168h";
+          };
+
+          statistics = {
+            interval = "168h";
           };
         };
       };
