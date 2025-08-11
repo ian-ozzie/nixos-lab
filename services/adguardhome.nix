@@ -71,7 +71,7 @@ in
           };
 
           filtering = {
-            blocking_mode = "refused";
+            blocking_mode = "nxdomain";
             filtering_enabled = true;
             filters_update_interval = 168;
           };
