@@ -15,6 +15,7 @@ in
   config = lib.mkIf cfg.enable {
     services = {
       traefik = {
+        dataDir = "/data/services/traefik";
         enable = true;
         package = with pkgs; traefik;
 
@@ -49,14 +50,6 @@ in
           };
         };
       };
-    };
-
-    systemd = {
-      services.traefik.serviceConfig.WorkingDirectory = "/data/services/traefik";
-
-      tmpfiles.rules = [
-        "d /data/services/traefik 0700 traefik traefik"
-      ];
     };
   };
 }
