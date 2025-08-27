@@ -17,7 +17,6 @@ in
     security = {
       acme = {
         acceptTerms = true;
-        preliminarySelfsigned = false;
 
         certs."${config.ozzie.lab.host.bind.domain}" = {
           domain = "${config.ozzie.lab.host.bind.domain}";
