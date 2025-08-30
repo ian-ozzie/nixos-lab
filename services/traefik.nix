@@ -20,6 +20,8 @@ in
         package = with pkgs; traefik;
 
         dynamicConfigOptions.http = {
+          middlewares.ci-ip-allow.ipAllowList.sourceRange = [ "127.0.0.1" ];
+
           routers = {
             traefik = {
               entryPoints = "websecure";
