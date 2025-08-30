@@ -10,6 +10,7 @@ in
 {
   options.ozzie.lab.traefik = {
     enable = lib.mkEnableOption "opinionated traefik config";
+    enableLog = lib.mkEnableOption "whether to enable access log";
   };
 
   config = lib.mkIf cfg.enable {
@@ -34,6 +35,10 @@ in
 
         staticConfigOptions = {
           api.dashboard = true;
+
+          accessLog = lib.mkIf cfg.enableLog {
+            filePath = "${config.services.traefik.dataDir}/access.log";
+          };
 
           entryPoints = {
             web = {
