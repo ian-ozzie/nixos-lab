@@ -8,5 +8,6 @@
     ./openssh.nix
     ./syncthing.nix
     ./traefik.nix
+    ./unifi.nix
   ];
 }
