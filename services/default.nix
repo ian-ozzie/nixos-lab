@@ -3,6 +3,7 @@
     ./acme.nix
     ./adguardhome.nix
     ./atuin-daemon.nix
+    ./forgejo.nix
     ./gitea-actions-runner.nix
     ./mysql.nix
     ./ncps.nix
