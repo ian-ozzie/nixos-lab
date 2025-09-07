@@ -12,5 +12,6 @@
     ./syncthing.nix
     ./traefik.nix
     ./unifi.nix
+    ./vaultwarden.nix
   ];
 }
