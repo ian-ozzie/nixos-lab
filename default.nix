@@ -2,5 +2,6 @@
   imports = [
     ./host
     ./services
+    ./users
   ];
 }

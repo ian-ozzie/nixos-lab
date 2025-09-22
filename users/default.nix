@@ -1,0 +1,5 @@
+{
+  imports = [
+    ./nix-deploy.nix
+  ];
+}
