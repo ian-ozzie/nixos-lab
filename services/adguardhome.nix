@@ -13,10 +13,28 @@ in
   options.ozzie.lab.adguardhome = {
     enable = lib.mkEnableOption "opinionated adguardhome config";
 
+    allowed = lib.mkOption {
+      default = [ "127.0.0.1" ];
+      description = "Default addresses to allow";
+      type = lib.types.listOf lib.types.str;
+    };
+
     bind = lib.mkOption {
       default = [ "127.0.0.80" ];
       description = "Default host to bind dns resolver to";
       type = lib.types.listOf lib.types.str;
+    };
+
+    domain = lib.mkOption {
+      default = config.ozzie.lab.host.bind.domain;
+      description = "Domain to expose adguardhome under";
+      type = lib.types.str;
+    };
+
+    host = lib.mkOption {
+      default = "dns";
+      description = "Host prefix to expose adguardhome with domain";
+      type = lib.types.str;
     };
   };
 
@@ -52,7 +70,7 @@ in
 
           dns = {
             aaaa_disabled = true;
-            allowed_clients = [ "127.0.0.1" ];
+            allowed_clients = cfg.allowed;
             bind_hosts = cfg.bind;
             cache_optimistic = true;
             cache_size = 16777216;
@@ -91,7 +109,7 @@ in
           routers.dns-web = {
             entryPoints = "websecure";
             priority = "10";
-            rule = "Host(`dns.${config.ozzie.lab.host.bind.domain}`)";
+            rule = "Host(`${cfg.host}.${cfg.domain}`)";
             service = "dns-web@file";
           };
 
