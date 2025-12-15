@@ -9,6 +9,7 @@
     ./ncps.nix
     ./netbird.nix
     ./openssh.nix
+    ./radicale.nix
     ./syncthing.nix
     ./traefik.nix
     ./unifi.nix
