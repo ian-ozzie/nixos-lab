@@ -28,7 +28,7 @@ in
           ROCKET_ADDRESS = "127.0.0.80";
           ROCKET_LOG = "critical";
           ROCKET_PORT = 8387;
-          SIGNUPS_ALLOWED = false;
+          SIGNUPS_ALLOWED = lib.mkDefault false;
         };
       };
 
