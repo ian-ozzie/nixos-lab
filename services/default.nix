@@ -8,6 +8,7 @@
     ./mysql.nix
     ./ncps.nix
     ./netbird.nix
+    ./ntfy-sh.nix
     ./openssh.nix
     ./radicale.nix
     ./syncthing.nix
