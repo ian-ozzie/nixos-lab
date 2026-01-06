@@ -5,11 +5,37 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
   };
 
-  outputs = _: {
-    lib = import ./lib;
+  outputs =
+    {
+      nixpkgs,
+      ...
+    }:
+    let
+      systems = [ "x86_64-linux" ];
+    in
+    {
+      devShells = nixpkgs.lib.genAttrs systems (
+        system:
+        let
+          inherit (nixpkgs.legacyPackages.${system}) mkShell;
 
-    nixosModules = {
-      default = import ./.;
+          pkgs = import nixpkgs {
+            inherit system;
+          };
+        in
+        {
+          default = mkShell {
+            packages = with pkgs; [
+              nixd
+            ];
+          };
+        }
+      );
+
+      lib = import ./lib;
+
+      nixosModules = {
+        default = import ./.;
+      };
     };
-  };
 }
