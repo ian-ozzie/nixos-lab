@@ -75,7 +75,7 @@ in
 
       openssh = lib.mkIf (cfg.ssh && openssh.enable) {
         settings = {
-          AcceptEnv = "GIT_PROTOCOL";
+          AcceptEnv = [ "GIT_PROTOCOL" ];
           AllowUsers = [ cfg.user ];
         };
       };
