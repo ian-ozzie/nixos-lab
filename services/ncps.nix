@@ -23,14 +23,17 @@ in
 
         cache = {
           allowPutVerb = true;
-          dataPath = "/cache/services/ncps";
           hostName = "ncps.${config.ozzie.lab.host.bind.domain}";
           maxSize = "64G";
-        };
 
-        upstream = {
-          caches = [ "https://cache.nixos.org" ];
-          publicKeys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" ];
+          storage = {
+            local = "/cache/services/ncps";
+          };
+
+          upstream = {
+            publicKeys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" ];
+            urls = [ "https://cache.nixos.org" ];
+          };
         };
       };
 
