@@ -11,6 +11,19 @@ in
   options.ozzie.lab.traefik = {
     enable = lib.mkEnableOption "opinionated traefik config";
     enableLog = lib.mkEnableOption "whether to enable access log";
+    expose = lib.mkEnableOption "whether to expose the traefik interface";
+
+    domain = lib.mkOption {
+      default = config.ozzie.lab.host.bind.domain;
+      description = "domain to expose the traefik interface on";
+      type = lib.types.str;
+    };
+
+    subdomain = lib.mkOption {
+      default = "traefik";
+      description = "subdomain to expose the traefik interface on";
+      type = lib.types.str;
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -24,10 +37,10 @@ in
           middlewares.ci-ip-allow.ipAllowList.sourceRange = [ "127.0.0.1" ];
 
           routers = {
-            traefik = {
+            traefik = lib.mkIf cfg.expose {
               entryPoints = "websecure";
               priority = "10";
-              rule = "Host(`traefik.${config.ozzie.lab.host.bind.domain}`)";
+              rule = "Host(`${cfg.subdomain}.${cfg.domain}`)";
               service = "api@internal";
             };
           };
