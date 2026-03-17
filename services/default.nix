@@ -6,6 +6,7 @@
     ./caddy.nix
     ./forgejo.nix
     ./gitea-actions-runner.nix
+    ./komga.nix
     ./mysql.nix
     ./ncps.nix
     ./netbird.nix
