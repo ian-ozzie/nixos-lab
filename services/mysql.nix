@@ -34,11 +34,12 @@ in
   config = lib.mkIf cfg.enable {
     # TODO: Configuration for rclone under backupUser, manually created
 
-    environment.systemPackages = with pkgs; [
-      mycli
-      mysqltuner
-      rclone
-    ];
+    environment.systemPackages =
+      with pkgs;
+      [
+        mysqltuner
+      ]
+      ++ lib.optional cfg.backup.enable rclone;
 
     services = {
       mysql = {
