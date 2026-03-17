@@ -15,6 +15,7 @@
     ./radicale.nix
     ./syncthing.nix
     ./traefik.nix
+    ./unbound.nix
     ./unifi.nix
     ./vaultwarden.nix
   ];
