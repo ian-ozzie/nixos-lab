@@ -3,10 +3,16 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
+
+    git-hooks = {
+      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:cachix/git-hooks.nix";
+    };
   };
 
   outputs =
     {
+      git-hooks,
       nixpkgs,
       ...
     }:
@@ -22,11 +28,32 @@
           pkgs = import nixpkgs {
             inherit system;
           };
+
+          gitHooks = git-hooks.lib.${system}.run {
+            src = ./.;
+
+            hooks = {
+              deadnix.enable = true;
+              nixfmt.enable = true;
+
+              check-flake = {
+                enable = true;
+                entry = "nix flake check";
+                pass_filenames = false;
+                types = [ "nix" ];
+              };
+            };
+          };
         in
         {
           default = mkShell {
+            inherit (gitHooks) shellHook;
+
+            buildInputs = gitHooks.enabledPackages;
+
             packages = with pkgs; [
               nixd
+              xc
             ];
           };
         }
