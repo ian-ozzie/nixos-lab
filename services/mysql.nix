@@ -48,16 +48,16 @@ in
 
         settings = {
           mysqld = {
-            default_storage_engine = "InnoDB";
-            innodb_buffer_pool_size = "256M";
-            innodb_file_per_table = "1";
-            innodb_log_buffer_size = "8M";
-            max_allowed_packet = "32M";
+            default_storage_engine = lib.mkDefault "InnoDB";
+            innodb_buffer_pool_size = lib.mkDefault "256M";
+            innodb_file_per_table = lib.mkDefault "1";
+            innodb_log_buffer_size = lib.mkDefault "8M";
+            max_allowed_packet = lib.mkDefault "32M";
           };
 
           mysqldump = {
-            max_allowed_packet = "16M";
-            quick = true;
+            max_allowed_packet = lib.mkDefault "16M";
+            quick = lib.mkDefault true;
           };
         };
       };
