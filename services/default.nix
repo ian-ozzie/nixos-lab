@@ -13,6 +13,7 @@
     ./ntfy-sh.nix
     ./openssh.nix
     ./radicale.nix
+    ./redis.nix
     ./syncthing.nix
     ./traefik.nix
     ./unbound.nix
