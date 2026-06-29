@@ -17,6 +17,16 @@ in
       default = cfg.enable;
     };
 
+    sso = lib.mkEnableOption "configure sso for access" // {
+      default = false;
+    };
+
+    ssoProxy = lib.mkOption {
+      type = lib.types.str;
+      default = "127.0.0.1";
+      description = "Trusted IP that the SSO proxy relays from";
+    };
+
     user = lib.mkOption {
       type = lib.types.str;
       default = "git";
@@ -44,6 +54,13 @@ in
           log.LEVEL = "Info";
           session.COOKIE_SECURE = true;
 
+          security = lib.mkIf cfg.sso {
+            REVERSE_PROXY_AUTHENTICATION_USER = "X-Token-User-Login";
+            REVERSE_PROXY_AUTHENTICATION_EMAIL = "X-Token-User-Email";
+            REVERSE_PROXY_AUTHENTICATION_FULL_NAME = "X-Token-User-Name";
+            REVERSE_PROXY_TRUSTED_PROXIES = cfg.ssoProxy;
+          };
+
           server = {
             DOMAIN = "git.${config.ozzie.lab.host.bind.domain}";
             HTTP_ADDR = "127.0.0.80";
@@ -51,6 +68,13 @@ in
             PROTOCOL = "http";
             ROOT_URL = "https://git.${config.ozzie.lab.host.bind.domain}/";
             SSH_PORT = 22;
+          };
+
+          service = lib.mkIf cfg.sso {
+            ENABLE_REVERSE_PROXY_AUTHENTICATION = true;
+            ENABLE_REVERSE_PROXY_AUTO_REGISTRATION = true;
+            ENABLE_REVERSE_PROXY_EMAIL = true;
+            ENABLE_REVERSE_PROXY_FULL_NAME = true;
           };
         };
       };
