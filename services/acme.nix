@@ -4,7 +4,7 @@
   ...
 }:
 let
-  inherit (config.ozzie.lab) traefik;
+  inherit (config.ozzie.lab) caddy traefik;
 
   cfg = config.ozzie.lab.acme;
 in
@@ -29,6 +29,9 @@ in
           dnsResolver = "1.1.1.1:53";
           environmentFile = "/data/services/acme/.env";
           group = "acme";
+
+          reloadServices =
+            lib.optional caddy.enable "caddy.service" ++ lib.optional traefik.enable "traefik.service";
         };
       };
     };
