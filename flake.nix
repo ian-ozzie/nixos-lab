@@ -2,64 +2,52 @@
   description = "Ozzie's NixOS lab configuration";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
-
-    git-hooks = {
-      inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:cachix/git-hooks.nix";
-    };
+    dev-tools.url = "github:ian-ozzie/nix-dev-tools";
+    nixpkgs.follows = "dev-tools/nixpkgs";
   };
 
   outputs =
     {
-      git-hooks,
+      dev-tools,
       nixpkgs,
       ...
     }:
     let
-      systems = [ "x86_64-linux" ];
+      inherit (nixpkgs) lib;
+      inherit (dev-tools.lib) forSystem hooks;
+
+      forEachSystem = lib.genAttrs [
+        "x86_64-linux"
+      ];
+
+      nixHooks = hooks.merge [
+        hooks.presets.general
+        hooks.presets.nix
+      ];
     in
     {
-      devShells = nixpkgs.lib.genAttrs systems (
-        system:
-        let
-          inherit (nixpkgs.legacyPackages.${system}) mkShell;
-
-          pkgs = import nixpkgs {
-            inherit system;
-          };
-
-          gitHooks = git-hooks.lib.${system}.run {
-            src = ./.;
-
-            hooks = {
-              deadnix.enable = true;
-              nixfmt.enable = true;
-
-              check-flake = {
-                enable = true;
-                entry = "nix flake check";
-                pass_filenames = false;
-                types = [ "nix" ];
-              };
-            };
-          };
-        in
-        {
-          default = mkShell {
-            inherit (gitHooks) shellHook;
-
-            buildInputs = gitHooks.enabledPackages;
-
-            packages = with pkgs; [
-              nixd
-              xc
-            ];
-          };
-        }
-      );
-
+      formatter = forEachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt);
       lib = import ./lib;
+
+      checks = forEachSystem (system: {
+        lint = (forSystem system).gitHooks.run {
+          src = ./.;
+          hooks = hooks.without [ "nix-flake-check" ] nixHooks;
+        };
+      });
+
+      devShells = forEachSystem (system: {
+        default = (forSystem system).mkDevShell {
+          src = ./.;
+
+          bundles = [
+            "common"
+            "nix"
+          ];
+
+          hooks = nixHooks;
+        };
+      });
 
       nixosModules = {
         default = import ./.;
