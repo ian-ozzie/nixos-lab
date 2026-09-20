@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -14,13 +15,13 @@ in
     enable = lib.mkEnableOption "opinionated syncthing config";
 
     group = lib.mkOption {
-      default = config.services.syncthing.group;
+      default = options.services.syncthing.group.default;
       description = "Group to run syncthing under";
       type = lib.types.str;
     };
 
     user = lib.mkOption {
-      default = config.services.syncthing.user;
+      default = options.services.syncthing.user.default;
       description = "User to run syncthing under";
       type = lib.types.str;
     };
