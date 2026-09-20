@@ -13,6 +13,7 @@ in
 {
   options.ozzie.lab.syncthing = {
     enable = lib.mkEnableOption "opinionated syncthing config";
+    directOnly = lib.mkEnableOption "limit to direct connections";
 
     group = lib.mkOption {
       default = options.services.syncthing.group.default;
@@ -28,7 +29,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    networking.firewall.allowedTCPPorts = [ 22000 ];
+    networking.firewall = {
+      allowedTCPPorts = [ 22000 ];
+      allowedUDPPorts = [ 22000 ];
+    };
 
     services = {
       syncthing = {
@@ -41,11 +45,19 @@ in
         overrideDevices = false;
         overrideFolders = false;
         package = with pkgs; syncthing;
-        relay.enable = false;
 
-        settings.gui = {
-          insecureAdminAccess = true;
-          insecureSkipHostcheck = true;
+        settings = {
+          gui = {
+            insecureAdminAccess = true;
+            insecureSkipHostcheck = true;
+          };
+
+          options = lib.mkIf cfg.directOnly {
+            globalAnnounceEnabled = false;
+            natEnabled = false;
+            relaysEnabled = false;
+            stunKeepaliveStartS = 0;
+          };
         };
       };
 
