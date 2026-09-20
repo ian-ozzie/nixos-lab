@@ -15,8 +15,9 @@ in
 
   config = lib.mkIf cfg.enable {
     services.caddy = {
+      inherit (cfg) package;
+
       enable = true;
-      package = cfg.package;
     };
 
     systemd = {
