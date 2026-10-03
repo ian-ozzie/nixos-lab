@@ -16,6 +16,7 @@ in
     services = {
       openssh = {
         enable = true;
+        openFirewall = lib.mkDefault true;
         package = with pkgs; openssh;
 
         hostKeys = [
@@ -32,6 +33,7 @@ in
 
         settings = {
           AllowUsers = [ ];
+          KbdInteractiveAuthentication = false;
           PasswordAuthentication = false;
           PermitRootLogin = lib.mkDefault "no";
         };
@@ -40,7 +42,7 @@ in
 
     systemd = {
       tmpfiles.rules = [
-        "d /data/services/openssh 0700 root root"
+        "d /data/services/openssh 0755 root root"
       ];
     };
   };
