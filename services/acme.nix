@@ -59,7 +59,7 @@ in
     };
 
     systemd = {
-      tmpfiles.rules = [
+      tmpfiles.rules = lib.mkIf (cfg.tokenFile == "/data/services/acme/.token") [
         "d /data/services/acme 0700 acme acme"
       ];
     };
