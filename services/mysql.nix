@@ -5,22 +5,32 @@
   ...
 }:
 let
-  # TODO: make these options rather than hardcoded
-  backupGroup = "users";
-  backupHome = "/data/backups/mysql";
-  backupTarget = "r2:database-backups";
-  backupScript = ''
-    find "${backupHome}" -name '*zst' | while read -r line; do
-      DB=$(basename "$line" | sed -e's/\.zst$//g')
-      TARGET="$DB"-$(date +'%Y-%m-%d').sql.zst
-
-      echo Transferring backup for "$DB" to "$TARGET"
-
-      ${pkgs.rclone}/bin/rclone --s3-no-check-bucket moveto "$line" ${backupTarget}/${config.networking.hostName}/mysql/"$DB"/"$TARGET"
-    done
-  '';
-  backupUser = "mysql-backup";
+  backupDatabases = lib.attrNames (lib.filterAttrs (_: database: database.backup) cfg.databases);
   cfg = config.ozzie.lab.mysql;
+  databaseNames = lib.attrNames cfg.databases;
+
+  backupScript = ''
+    shopt -s nullglob
+    ${lib.optionalString (cfg.backup.rcloneConfigFile != null) ''
+      export RCLONE_CONFIG="$CREDENTIALS_DIRECTORY/rclone.conf"
+    ''}
+
+    failed=0
+    for dump in ${lib.escapeShellArg (toString cfg.backup.location)}/*.zst; do
+      database=$(basename "$dump" .zst)
+      timestamp=$(date -u -r "$dump" +'%Y-%m-%dT%H-%M-%S.%NZ')
+      relative="$database/$timestamp.sql.zst"
+      destination=${lib.escapeShellArg "${cfg.backup.target}/${config.networking.hostName}/mysql"}/"$relative"
+
+      echo Transferring backup "$relative"
+
+      if ! ${pkgs.rclone}/bin/rclone --s3-no-check-bucket moveto "$dump" "$destination"; then
+        failed=1
+      fi
+    done
+
+    exit "$failed"
+  '';
 in
 {
   options.ozzie.lab.mysql = {
@@ -28,11 +38,54 @@ in
 
     backup = {
       enable = lib.mkEnableOption "opinionated mysql-backup config";
+
+      group = lib.mkOption {
+        default = "nogroup";
+        type = lib.types.str;
+      };
+
+      location = lib.mkOption {
+        default = "/data/backups/mysql";
+        type = lib.types.path;
+      };
+
+      rcloneConfigFile = lib.mkOption {
+        default = null;
+        type = lib.types.nullOr lib.types.str;
+      };
+
+      target = lib.mkOption {
+        default = "r2:database-backups";
+        type = lib.types.str;
+      };
+
+      user = lib.mkOption {
+        default = "mysqlbackup";
+        type = lib.types.str;
+      };
+    };
+
+    databases = lib.mkOption {
+      default = { };
+
+      type = lib.types.attrsOf (
+        lib.types.submodule {
+          options.backup = lib.mkOption {
+            default = true;
+            type = lib.types.bool;
+          };
+        }
+      );
     };
   };
 
   config = lib.mkIf cfg.enable {
-    # TODO: Configuration for rclone under backupUser, manually created
+    assertions = [
+      {
+        assertion = lib.all (name: builtins.match "[A-Za-z_][A-Za-z0-9_]{0,63}" name != null) databaseNames;
+        message = "ozzie.lab.mysql.databases names must contain 1–64 ASCII letters, digits, or underscores and start with a letter or underscore";
+      }
+    ];
 
     environment.systemPackages =
       with pkgs;
@@ -44,20 +97,17 @@ in
     services = {
       mysql = {
         enable = true;
+        ensureDatabases = databaseNames;
         package = with pkgs; mariadb;
 
         settings = {
           mysqld = {
-            default_storage_engine = lib.mkDefault "InnoDB";
             innodb_buffer_pool_size = lib.mkDefault "256M";
-            innodb_file_per_table = lib.mkDefault "1";
-            innodb_log_buffer_size = lib.mkDefault "8M";
             max_allowed_packet = lib.mkDefault "32M";
           };
 
           mysqldump = {
-            max_allowed_packet = lib.mkDefault "16M";
-            quick = lib.mkDefault true;
+            max_allowed_packet = lib.mkDefault "32M";
           };
         };
       };
@@ -66,9 +116,11 @@ in
         calendar = "05:00:00";
         compressionAlg = "zstd";
         compressionLevel = 9;
+        databases = backupDatabases;
         enable = true;
-        location = backupHome;
-        user = backupUser;
+        location = cfg.backup.location;
+        singleTransaction = true;
+        user = cfg.backup.user;
       };
     };
 
@@ -78,35 +130,40 @@ in
           onSuccess = [ "mysql-backup-rclone.service" ];
 
           serviceConfig = {
-            Group = backupGroup;
-            UMask = "0027";
+            Group = cfg.backup.group;
+            UMask = "0077";
           };
         };
 
         mysql-backup-rclone = {
           after = [ "mysql-backup.service" ];
-          script = backupScript;
-          wantedBy = [ "multi-user.target" ];
+          path = [ pkgs.coreutils ];
+          script = lib.mkDefault backupScript;
 
           serviceConfig = {
-            Group = backupGroup;
+            Group = cfg.backup.group;
             Type = "oneshot";
-            User = backupUser;
-            WorkingDirectory = backupHome;
+            UMask = "0077";
+            User = cfg.backup.user;
+            WorkingDirectory = cfg.backup.location;
+
+            LoadCredential = lib.mkIf (cfg.backup.rcloneConfigFile != null) [
+              "rclone.conf:${cfg.backup.rcloneConfigFile}"
+            ];
           };
         };
       };
-
-      tmpfiles.rules = [
-        "d ${backupHome} 3770 ${backupUser} ${backupGroup} - -"
-      ];
     };
 
-    users.users."${backupUser}" = lib.mkIf cfg.backup.enable {
-      createHome = false;
-      group = backupGroup;
-      home = backupHome;
-      isSystemUser = true;
+    users = lib.mkIf cfg.backup.enable {
+      groups.${cfg.backup.group} = { };
+
+      users."${cfg.backup.user}" = lib.mkIf (cfg.backup.user != "mysqlbackup") {
+        createHome = false;
+        group = cfg.backup.group;
+        home = cfg.backup.location;
+        isSystemUser = true;
+      };
     };
   };
 }
