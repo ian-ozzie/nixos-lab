@@ -8,6 +8,9 @@ let
   backupDatabases = lib.attrNames (lib.filterAttrs (_: database: database.backup) cfg.databases);
   cfg = config.ozzie.lab.mysql;
   databaseNames = lib.attrNames cfg.databases;
+  escapeDatabase = name: lib.replaceStrings [ "_" ] [ "\\_" ] name;
+  passwordDatabases = lib.filterAttrs (_: database: database.passwordFile != null) cfg.databases;
+  socketDatabases = lib.filterAttrs (_: database: database.passwordFile == null) cfg.databases;
 
   backupScript = ''
     shopt -s nullglob
@@ -69,12 +72,31 @@ in
       default = { };
 
       type = lib.types.attrsOf (
-        lib.types.submodule {
-          options.backup = lib.mkOption {
-            default = true;
-            type = lib.types.bool;
-          };
-        }
+        lib.types.submodule (
+          { name, ... }: {
+            options = {
+              backup = lib.mkOption {
+                default = true;
+                type = lib.types.bool;
+              };
+
+              user = lib.mkOption {
+                default = name;
+                type = lib.types.strMatching "[A-Za-z_][A-Za-z0-9_]{0,79}";
+              };
+
+              hosts = lib.mkOption {
+                default = [ "localhost" ];
+                type = lib.types.nonEmptyListOf (lib.types.strMatching "[A-Za-z0-9][A-Za-z0-9.:-]*");
+              };
+
+              passwordFile = lib.mkOption {
+                default = null;
+                type = lib.types.nullOr lib.types.str;
+              };
+            };
+          }
+        )
       );
     };
   };
@@ -84,6 +106,10 @@ in
       {
         assertion = lib.all (name: builtins.match "[A-Za-z_][A-Za-z0-9_]{0,63}" name != null) databaseNames;
         message = "ozzie.lab.mysql.databases names must contain 1–64 ASCII letters, digits, or underscores and start with a letter or underscore";
+      }
+      {
+        assertion = lib.all (database: database.hosts == [ "localhost" ]) (lib.attrValues socketDatabases);
+        message = "ozzie.lab.mysql.databases without a passwordFile use socket authentication and must only allow localhost";
       }
     ];
 
@@ -99,6 +125,11 @@ in
         enable = true;
         ensureDatabases = databaseNames;
         package = with pkgs; mariadb;
+
+        ensureUsers = lib.mapAttrsToList (name: database: {
+          name = database.user;
+          ensurePermissions."\\`${escapeDatabase name}\\`.*" = "ALL PRIVILEGES";
+        }) socketDatabases;
 
         settings = {
           mysqld = {
@@ -124,9 +155,46 @@ in
       };
     };
 
-    systemd = lib.mkIf cfg.backup.enable {
+    systemd = {
       services = {
-        mysql-backup = {
+        mysql-accounts = lib.mkIf (passwordDatabases != { }) {
+          after = [ "mysql.service" ];
+          partOf = [ "mysql.service" ];
+          path = [ config.services.mysql.package ];
+          requires = [ "mysql.service" ];
+          wantedBy = [ "multi-user.target" ];
+
+          script = lib.concatStrings (
+            lib.mapAttrsToList (name: database: ''
+              password=$(< "$CREDENTIALS_DIRECTORY/${name}")
+              test -n "$password"
+              password="''${password//\'/\'\'}"
+
+              mariadb --batch --binary-mode <<SQL
+              SET SESSION sql_mode = 'NO_BACKSLASH_ESCAPES';
+              ${lib.concatMapStrings (host: ''
+                CREATE USER IF NOT EXISTS '${database.user}'@'${host}' IDENTIFIED BY '$password';
+                ALTER USER '${database.user}'@'${host}' IDENTIFIED BY '$password';
+                GRANT ALL PRIVILEGES ON \`${escapeDatabase name}\`.* TO '${database.user}'@'${host}';
+              '') database.hosts}
+              SQL
+
+              unset password
+            '') passwordDatabases
+          );
+
+          serviceConfig = {
+            RemainAfterExit = true;
+            Type = "oneshot";
+            User = config.services.mysql.user;
+
+            LoadCredential = lib.mapAttrsToList (
+              name: database: "${name}:${database.passwordFile}"
+            ) passwordDatabases;
+          };
+        };
+
+        mysql-backup = lib.mkIf cfg.backup.enable {
           onSuccess = [ "mysql-backup-rclone.service" ];
 
           serviceConfig = {
@@ -135,7 +203,7 @@ in
           };
         };
 
-        mysql-backup-rclone = {
+        mysql-backup-rclone = lib.mkIf cfg.backup.enable {
           after = [ "mysql-backup.service" ];
           path = [ pkgs.coreutils ];
           script = lib.mkDefault backupScript;
