@@ -5,6 +5,7 @@
     ./atuin-daemon.nix
     ./caddy.nix
     ./forgejo.nix
+    ./gatus.nix
     ./gitea-actions-runner.nix
     ./komga.nix
     ./mysql.nix

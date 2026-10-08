@@ -27,6 +27,7 @@ in
   };
 
   app = import ./app.nix roleArgs;
+  monitor = import ./monitor.nix roleArgs;
   mysql = import ./mysql.nix roleArgs;
   router = import ./router.nix roleArgs;
 }
