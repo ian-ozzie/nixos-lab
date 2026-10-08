@@ -2,6 +2,18 @@
 
 ## Tasks
 
+### update
+
+Update all/specific input
+
+Inputs: INPUT
+
+Environment: INPUT=
+
+```bash
+nix flake update $INPUT
+```
+
 ### lock
 
 Lock flake inputs
@@ -10,20 +22,9 @@ Lock flake inputs
 nix flake lock
 ```
 
-### update
-
-Update all/specific flake
-
-Inputs: MODULE
-Environment: MODULE=
-
-```bash
-nix flake update $MODULE
-```
-
 ### check
 
-Check flake outputs
+Check flake
 
 ```bash
 nix flake check
@@ -31,15 +32,23 @@ nix flake check
 
 ### inputs
 
-Check flake inputs
+Show flake inputs
 
 ```bash
 nix flake metadata
 ```
 
+### outputs
+
+Show flake outputs
+
+```bash
+nix flake show
+```
+
 ### test
 
-Validate flake
+Used by CI to validate flake
 
 ```bash
 nix flake check
