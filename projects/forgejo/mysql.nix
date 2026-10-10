@@ -20,7 +20,7 @@ in
     enable = true;
 
     databases.${projectName} = {
-      passwordFile = project.mysql.passwordFile or null;
+      passwordFile = if localDatabase then null else project.mysql.passwordFile or null;
       user = if localDatabase then config.services.forgejo.user else projectName;
 
       hosts =

@@ -13,6 +13,7 @@
 }:
 let
   cfg = config.ozzie.lab.forgejo;
+  urlAddress = address: if lib.hasInfix ":" address then "[${address}]" else address;
 
   clients =
     projectNetwork.addresses "backend" project.roles.router
@@ -28,11 +29,16 @@ in
     forgejo = {
       database = {
         createDatabase = false;
-        host = if localDatabase then "localhost" else projectNetwork.address "backend" project.roles.mysql;
         name = projectName;
         passwordFile = if localDatabase then null else project.mysql.passwordFile or null;
         type = "mysql";
         user = if localDatabase then config.services.forgejo.user else projectName;
+
+        host =
+          if localDatabase then
+            "localhost"
+          else
+            urlAddress (projectNetwork.address "backend" project.roles.mysql);
 
         socket =
           if localDatabase then
