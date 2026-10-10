@@ -13,7 +13,6 @@
 }:
 let
   cfg = config.ozzie.lab.forgejo;
-  urlAddress = address: if lib.hasInfix ":" address then "[${address}]" else address;
 
   clients =
     projectNetwork.addresses "backend" project.roles.router
@@ -38,7 +37,7 @@ in
           if localDatabase then
             "localhost"
           else
-            urlAddress (projectNetwork.address "backend" project.roles.mysql);
+            projectNetwork.urlAddress (projectNetwork.address "backend" project.roles.mysql);
 
         socket =
           if localDatabase then
@@ -55,7 +54,7 @@ in
     };
 
     firewalld.zones.nixos-fw-default.rules = map (client: {
-      "@family" = if lib.hasInfix ":" client then "ipv6" else "ipv4";
+      "@family" = projectNetwork.addressFamily client;
       accept = "";
       source."@address" = client;
 

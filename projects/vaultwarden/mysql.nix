@@ -30,7 +30,7 @@ in
 
   services = lib.mkIf (!localDatabase) {
     firewalld.zones.nixos-fw-default.rules = map (client: {
-      "@family" = if lib.hasInfix ":" client then "ipv6" else "ipv4";
+      "@family" = projectNetwork.addressFamily client;
       accept = "";
       source."@address" = client;
 

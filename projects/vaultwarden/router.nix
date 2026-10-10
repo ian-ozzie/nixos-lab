@@ -4,23 +4,15 @@
   ...
 }:
 {
-  lib,
   memberName,
   ...
 }:
-let
-  urlAddress = address: if lib.hasInfix ":" address then "[${address}]" else address;
-
-  upstreams = map (address: "${urlAddress address}:8222") (
-    projectNetwork.addresses "backend" project.roles.app
-  );
-in
 {
   ozzie.lab.caddy = {
     enable = true;
 
     sites.${project.hostName} = {
-      inherit upstreams;
+      upstreams = projectNetwork.endpoints "backend" project.roles.app 8222;
 
       listenAddresses = [
         (projectNetwork.address "frontend" memberName)

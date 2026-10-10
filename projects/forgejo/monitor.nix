@@ -7,8 +7,6 @@
 }:
 { lib, ... }:
 let
-  urlAddress = address: if lib.hasInfix ":" address then "[${address}]" else address;
-
   endpoint = name: settings: {
     name = "${projectName}-${name}";
 
@@ -35,7 +33,7 @@ in
           member:
           endpoint "mysql-${member}" {
             conditions = [ "[CONNECTED] == true" ];
-            url = "tcp://${urlAddress (projectNetwork.address "backend" member)}:3306";
+            url = "tcp://${projectNetwork.endpoint "backend" member 3306}";
           }
         ) (lib.toList project.roles.mysql)
       )
@@ -45,7 +43,7 @@ in
           client.ignore-redirect = true;
           conditions = healthConditions;
           headers.Host = project.hostName;
-          url = "http://${urlAddress (projectNetwork.address "backend" member)}:8386/api/healthz";
+          url = "http://${projectNetwork.endpoint "backend" member 8386}/api/healthz";
         }
       ) (lib.toList project.roles.app)
       ++ [
