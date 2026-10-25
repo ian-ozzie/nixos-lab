@@ -14,10 +14,22 @@ in
   options.ozzie.lab.syncthing = {
     enable = lib.mkEnableOption "opinionated syncthing config";
     directOnly = lib.mkEnableOption "limit to direct connections";
+    expose = lib.mkEnableOption "reverse proxy the gui through caddy";
+
+    domain = lib.mkOption {
+      description = "Domain to expose syncthing under";
+      type = lib.types.str;
+    };
 
     group = lib.mkOption {
       default = options.services.syncthing.group.default;
       description = "Group to run syncthing under";
+      type = lib.types.str;
+    };
+
+    host = lib.mkOption {
+      default = "sync";
+      description = "Host prefix to expose syncthing with domain";
       type = lib.types.str;
     };
 
@@ -29,6 +41,11 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    ozzie.lab.caddy = lib.mkIf cfg.expose {
+      enable = true;
+      sites."${cfg.host}.${cfg.domain}".upstreams = [ "127.0.0.1:8384" ];
+    };
+
     networking.firewall = {
       allowedTCPPorts = [ 22000 ];
       allowedUDPPorts = [ 22000 ];
@@ -41,7 +58,6 @@ in
         configDir = "/data/services/syncthing/config";
         dataDir = "/data/services/syncthing";
         enable = true;
-        guiAddress = "127.0.0.80:8384";
         overrideDevices = false;
         overrideFolders = false;
         package = with pkgs; syncthing;
@@ -66,12 +82,12 @@ in
           routers.syncthing = {
             entryPoints = "websecure";
             priority = "10";
-            rule = "Host(`sync.${config.ozzie.lab.host.bind.domain}`)";
+            rule = "Host(`${cfg.host}.${cfg.domain}`)";
             service = "syncthing@file";
           };
 
           services.syncthing = {
-            loadBalancer.servers = [ { url = "http://127.0.0.80:8384"; } ];
+            loadBalancer.servers = [ { url = "http://127.0.0.1:8384"; } ];
           };
         };
       };
