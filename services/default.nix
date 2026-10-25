@@ -15,6 +15,7 @@
     ./openssh.nix
     ./radicale.nix
     ./redis.nix
+    ./resolver.nix
     ./syncthing.nix
     ./traefik.nix
     ./unbound.nix
