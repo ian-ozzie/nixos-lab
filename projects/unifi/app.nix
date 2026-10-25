@@ -1,4 +1,6 @@
 {
+  localApp,
+  ports,
   project,
   projectNetwork,
   ...
@@ -15,10 +17,10 @@ in
 {
   ozzie.lab.unifi.enable = true;
 
-  services.firewalld.zones.nixos-fw-default.rules = lib.concatMap (
-    client:
-    map
-      (port: {
+  services.firewalld.zones.nixos-fw-default.rules = lib.mkIf (!localApp) (
+    lib.concatMap (
+      client:
+      map (port: {
         "@family" = projectNetwork.addressFamily client;
         accept = "";
         source."@address" = client;
@@ -27,10 +29,7 @@ in
           "@port" = toString port;
           "@protocol" = "tcp";
         };
-      })
-      [
-        8443
-        8080
-      ]
-  ) clients;
+      }) (lib.attrValues ports)
+    ) clients
+  );
 }

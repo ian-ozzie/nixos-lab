@@ -1,4 +1,6 @@
 {
+  localApp,
+  ports,
   project,
   projectNetwork,
   ...
@@ -10,6 +12,13 @@
 }:
 let
   listenAddresses = [ (projectNetwork.address "frontend" memberName) ];
+
+  endpoints =
+    port:
+    if localApp then
+      [ "127.0.0.1:${toString port}" ]
+    else
+      projectNetwork.endpoints "backend" project.roles.app port;
 in
 {
   ozzie.lab.caddy = {
@@ -18,6 +27,8 @@ in
     sites.${project.hostName} = {
       inherit listenAddresses;
 
+      upstreams = map (endpoint: "https://${endpoint}") (endpoints ports.https);
+
       proxyConfig = ''
         header_up Host {hostport}
 
@@ -25,10 +36,6 @@ in
           tls_insecure_skip_verify
         }
       '';
-
-      upstreams = map (endpoint: "https://${endpoint}") (
-        projectNetwork.endpoints "backend" project.roles.app 8443
-      );
     };
   };
 
@@ -40,9 +47,7 @@ in
     extraConfig = ''
       handle /inform {
         reverse_proxy ${
-          lib.concatStringsSep " " (
-            map (endpoint: "http://${endpoint}") (projectNetwork.endpoints "backend" project.roles.app 8080)
-          )
+          lib.concatStringsSep " " (map (endpoint: "http://${endpoint}") (endpoints ports.inform))
         }
       }
 
