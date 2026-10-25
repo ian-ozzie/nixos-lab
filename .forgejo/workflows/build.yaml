@@ -1,7 +1,15 @@
+name: Test flake
 on: [push]
+
+concurrency:
+  group: ${{ forgejo.workflow }}-${{ forgejo.ref }}
+  cancel-in-progress: false
+
 jobs:
   test:
     runs-on: nix-amd64
+
     steps:
-      - uses: actions/checkout@v4
-      - run: xc test
+      - uses: actions/checkout@v6
+      - name: Test flake through xc
+        run: xc test
