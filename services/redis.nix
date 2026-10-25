@@ -9,34 +9,14 @@ in
 {
   options.ozzie.lab.redis = {
     enable = lib.mkEnableOption "opinionated redis config";
-
-    bind = lib.mkOption {
-      default = config.ozzie.lab.host.bind.ip;
-      description = "address to bind redis to";
-      type = lib.types.str;
-    };
-
-    maxMemory = lib.mkOption {
-      default = "256mb";
-      description = "memory limit for redis";
-      type = lib.types.str;
-    };
-
-    port = lib.mkOption {
-      default = 6379;
-      description = "port to bind redis to";
-      type = lib.types.port;
-    };
   };
 
   config = lib.mkIf cfg.enable {
     services.redis.servers."" = {
       enable = true;
 
-      inherit (cfg) bind port;
-
       settings = {
-        maxmemory = lib.mkDefault cfg.maxMemory;
+        maxmemory = lib.mkDefault "256mb";
         maxmemory-policy = lib.mkDefault "noeviction";
       };
     };
