@@ -2,10 +2,17 @@ projectArgs:
 let
   inherit (projectArgs) project projectName;
 
+  port = project.port or 8222;
+  toList = value: if builtins.isList value then value else [ value ];
+
+  localApp =
+    (project.roles.router or null) != null
+    && toList project.roles.router == [ project.roles.app or null ];
+
   localDatabase = (project.roles.app or null) == (project.roles.mysql or null);
 
   roleArgs = projectArgs // {
-    inherit localDatabase;
+    inherit localApp localDatabase port;
   };
 in
 {

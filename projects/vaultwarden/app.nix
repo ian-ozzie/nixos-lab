@@ -1,5 +1,7 @@
 {
+  localApp,
   localDatabase,
+  port,
   project,
   projectName,
   projectNetwork,
@@ -29,19 +31,22 @@ in
       DATABASE_URL = lib.mkIf localDatabase "mysql://${databaseUser}@localhost/${projectName}?unix_socket=${databaseSocket}";
       DATABASE_URL_FILE = lib.mkIf (!localDatabase) "/run/vaultwarden/database-url";
       DOMAIN = "https://${project.hostName}";
-      ROCKET_ADDRESS = projectNetwork.address "backend" memberName;
+      ROCKET_ADDRESS = if localApp then "127.0.0.1" else projectNetwork.address "backend" memberName;
+      ROCKET_PORT = port;
     };
 
-    firewalld.zones.nixos-fw-default.rules = map (client: {
-      "@family" = projectNetwork.addressFamily client;
-      accept = "";
-      source."@address" = client;
+    firewalld.zones.nixos-fw-default.rules = lib.mkIf (!localApp) (
+      map (client: {
+        "@family" = projectNetwork.addressFamily client;
+        accept = "";
+        source."@address" = client;
 
-      port = {
-        "@port" = toString config.services.vaultwarden.config.ROCKET_PORT;
-        "@protocol" = "tcp";
-      };
-    }) clients;
+        port = {
+          "@port" = toString port;
+          "@protocol" = "tcp";
+        };
+      }) clients
+    );
   };
 
   systemd.services.vaultwarden = lib.mkMerge [

@@ -1,5 +1,7 @@
 {
+  localApp,
   localDatabase,
+  port,
   project,
   projectName,
   projectNetwork,
@@ -36,15 +38,17 @@ in
           }
         ) (lib.toList project.roles.mysql)
       )
-      ++ map (
-        member:
-        endpoint "app-${member}" {
-          client.ignore-redirect = true;
-          conditions = healthConditions;
-          headers.Host = project.hostName;
-          url = "http://${projectNetwork.endpoint "backend" member 8222}/alive";
-        }
-      ) (lib.toList project.roles.app)
+      ++ lib.optionals (!localApp) (
+        map (
+          member:
+          endpoint "app-${member}" {
+            client.ignore-redirect = true;
+            conditions = healthConditions;
+            headers.Host = project.hostName;
+            url = "http://${projectNetwork.endpoint "backend" member port}/alive";
+          }
+        ) (lib.toList project.roles.app)
+      )
       ++ [
         (endpoint "router" {
           client.ignore-redirect = true;
