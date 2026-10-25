@@ -1,5 +1,7 @@
 {
+  localApp,
   localDatabase,
+  port,
   project,
   projectName,
   projectNetwork,
@@ -20,8 +22,15 @@ let
 in
 {
   ozzie.lab = {
-    forgejo.enable = true;
     openssh.enable = lib.mkIf cfg.ssh true;
+
+    forgejo = {
+      enable = true;
+
+      ssoProxy = lib.mkIf (!localApp) (
+        lib.concatStringsSep "," (projectNetwork.addresses "backend" project.roles.router)
+      );
+    };
   };
 
   services = {
@@ -48,21 +57,24 @@ in
 
       settings.server = {
         DOMAIN = project.hostName;
-        HTTP_ADDR = projectNetwork.address "backend" memberName;
+        HTTP_ADDR = if localApp then "127.0.0.1" else projectNetwork.address "backend" memberName;
+        HTTP_PORT = port;
         ROOT_URL = "https://${project.hostName}/";
       };
     };
 
-    firewalld.zones.nixos-fw-default.rules = map (client: {
-      "@family" = projectNetwork.addressFamily client;
-      accept = "";
-      source."@address" = client;
+    firewalld.zones.nixos-fw-default.rules = lib.mkIf (!localApp) (
+      map (client: {
+        "@family" = projectNetwork.addressFamily client;
+        accept = "";
+        source."@address" = client;
 
-      port = {
-        "@port" = "8386";
-        "@protocol" = "tcp";
-      };
-    }) clients;
+        port = {
+          "@port" = toString port;
+          "@protocol" = "tcp";
+        };
+      }) clients
+    );
 
     openssh.settings = lib.mkIf cfg.ssh {
       AcceptEnv = [ "GIT_PROTOCOL" ];

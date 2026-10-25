@@ -29,7 +29,7 @@ in
           #   labels = [ "example:host" ];
           #   name = "example-runner";
           #   tokenFile = "/data/services/gitea-actions-runner/.example-runner.env";
-          #   url = "https://git.${config.ozzie.lab.host.shared.domain}";
+          #   url = "https://git.example.com";
           #
           #   hostPackages = with pkgs; [
           #     bash

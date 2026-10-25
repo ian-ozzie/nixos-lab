@@ -10,13 +10,10 @@ in
 {
   options.ozzie.lab.forgejo = {
     enable = lib.mkEnableOption "opinionated forgejo config";
+    sso = lib.mkEnableOption "configure sso for access";
 
     ssh = lib.mkEnableOption "configure openssh for access" // {
       default = cfg.enable;
-    };
-
-    sso = lib.mkEnableOption "configure sso for access" // {
-      default = false;
     };
 
     ssoProxy = lib.mkOption {
@@ -36,25 +33,18 @@ in
     services.forgejo = {
       enable = true;
       package = with pkgs; forgejo;
-      repositoryRoot = "/data/services/forgejo/repos";
-      stateDir = "/data/services/forgejo";
+      repositoryRoot = lib.mkDefault "/data/services/forgejo/repos";
+      stateDir = lib.mkDefault "/data/services/forgejo";
       user = lib.mkDefault cfg.user;
 
       settings = {
-        log.LEVEL = "Info";
-        session.COOKIE_SECURE = true;
+        session.COOKIE_SECURE = lib.mkDefault true;
 
         security = lib.mkIf cfg.sso {
           REVERSE_PROXY_AUTHENTICATION_EMAIL = "X-Token-User-Email";
           REVERSE_PROXY_AUTHENTICATION_FULL_NAME = "X-Token-User-Name";
           REVERSE_PROXY_AUTHENTICATION_USER = "X-Token-User-Login";
           REVERSE_PROXY_TRUSTED_PROXIES = cfg.ssoProxy;
-        };
-
-        server = {
-          HTTP_PORT = 8386;
-          PROTOCOL = "http";
-          SSH_PORT = 22;
         };
 
         service = lib.mkIf cfg.sso {

@@ -1,4 +1,6 @@
 {
+  localApp,
+  port,
   project,
   projectNetwork,
   ...
@@ -12,11 +14,15 @@
     enable = true;
 
     sites.${project.hostName} = {
-      upstreams = projectNetwork.endpoints "backend" project.roles.app 8386;
-
       listenAddresses = [
         (projectNetwork.address "frontend" memberName)
       ];
+
+      upstreams =
+        if localApp then
+          [ "127.0.0.1:${toString port}" ]
+        else
+          projectNetwork.endpoints "backend" project.roles.app port;
     };
   };
 }
