@@ -4,7 +4,7 @@
   ...
 }:
 let
-  inherit (config.ozzie.lab) caddy traefik;
+  inherit (config.ozzie.lab) caddy;
 
   cfg = config.ozzie.lab.acme;
 in
@@ -13,7 +13,7 @@ in
     enable = lib.mkEnableOption "opinionated acme config";
 
     domains = lib.mkOption {
-      default = [ config.ozzie.lab.host.bind.domain ];
+      default = [ ];
       description = "domains to issue wildcard certificates for";
       type = lib.types.listOf lib.types.str;
     };
@@ -36,8 +36,7 @@ in
           extraDomainNames = [ "*.${domain}" ];
           group = "acme";
 
-          reloadServices =
-            lib.optional caddy.enable "caddy.service" ++ lib.optional traefik.enable "traefik.service";
+          reloadServices = lib.optional caddy.enable "caddy.service";
         });
 
         defaults = {
@@ -45,16 +44,6 @@ in
           dnsProvider = "cloudflare";
           dnsResolver = "1.1.1.1:53";
         };
-      };
-    };
-
-    services = {
-      traefik = lib.mkIf traefik.enable {
-        dynamicConfigOptions.tls.certificates = map (domain: {
-          certFile = "/var/lib/acme/${domain}/fullchain.pem";
-          keyFile = "/var/lib/acme/${domain}/key.pem";
-          stores = "default";
-        }) cfg.domains;
       };
     };
 
@@ -66,10 +55,6 @@ in
 
     users.users = {
       caddy = lib.mkIf caddy.enable {
-        extraGroups = [ "acme" ];
-      };
-
-      traefik = lib.mkIf traefik.enable {
         extraGroups = [ "acme" ];
       };
     };

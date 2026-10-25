@@ -17,7 +17,6 @@
     ./redis.nix
     ./resolver.nix
     ./syncthing.nix
-    ./traefik.nix
     ./unbound.nix
     ./unifi.nix
     ./vaultwarden.nix

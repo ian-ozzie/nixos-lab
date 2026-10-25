@@ -6,8 +6,6 @@
   ...
 }:
 let
-  inherit (config.ozzie.lab) traefik;
-
   cfg = config.ozzie.lab.syncthing;
 in
 {
@@ -73,21 +71,6 @@ in
             natEnabled = false;
             relaysEnabled = false;
             stunKeepaliveStartS = 0;
-          };
-        };
-      };
-
-      traefik = lib.mkIf traefik.enable {
-        dynamicConfigOptions.http = {
-          routers.syncthing = {
-            entryPoints = "websecure";
-            priority = "10";
-            rule = "Host(`${cfg.host}.${cfg.domain}`)";
-            service = "syncthing@file";
-          };
-
-          services.syncthing = {
-            loadBalancer.servers = [ { url = "http://127.0.0.1:8384"; } ];
           };
         };
       };

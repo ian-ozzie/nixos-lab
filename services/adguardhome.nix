@@ -5,8 +5,6 @@
   ...
 }:
 let
-  inherit (config.ozzie.lab) traefik;
-
   cfg = config.ozzie.lab.adguardhome;
 in
 {
@@ -129,21 +127,6 @@ in
 
           statistics = {
             interval = "168h";
-          };
-        };
-      };
-
-      traefik = lib.mkIf traefik.enable {
-        dynamicConfigOptions.http = {
-          routers.dns-web = {
-            entryPoints = "websecure";
-            priority = "10";
-            rule = "Host(`${cfg.host}.${cfg.domain}`)";
-            service = "dns-web@file";
-          };
-
-          services.dns-web = {
-            loadBalancer.servers = [ { url = "http://127.0.0.1:8053"; } ];
           };
         };
       };
