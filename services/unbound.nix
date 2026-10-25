@@ -11,6 +11,18 @@ in
   options.ozzie.lab.unbound = {
     enable = lib.mkEnableOption "opinionated unbound config";
 
+    allowed = lib.mkOption {
+      default = [ "127.0.0.1" ];
+      description = "Default addresses to allow";
+      type = lib.types.listOf lib.types.str;
+    };
+
+    bind = lib.mkOption {
+      default = [ "127.0.0.1" ];
+      description = "Default host to bind dns resolver to";
+      type = lib.types.listOf lib.types.str;
+    };
+
     localTTL = lib.mkOption {
       default = 300;
       type = lib.types.int;
@@ -32,11 +44,15 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    networking.nameservers = [ "127.0.0.1" ];
+
     services.unbound = {
       enable = true;
 
       settings = {
         server = {
+          access-control = map (address: "${address} allow") cfg.allowed;
+          interface = cfg.bind;
           prefetch = lib.mkDefault true;
 
           local-data = lib.flatten (
