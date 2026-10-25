@@ -12,6 +12,7 @@ in
 {
   options.ozzie.lab.adguardhome = {
     enable = lib.mkEnableOption "opinionated adguardhome config";
+    expose = lib.mkEnableOption "reverse proxy the web interface through caddy";
 
     allowed = lib.mkOption {
       default = [ "127.0.0.1" ];
@@ -20,13 +21,12 @@ in
     };
 
     bind = lib.mkOption {
-      default = [ "127.0.0.80" ];
+      default = [ "127.0.0.1" ];
       description = "Default host to bind dns resolver to";
       type = lib.types.listOf lib.types.str;
     };
 
     domain = lib.mkOption {
-      default = config.ozzie.lab.host.bind.domain;
       description = "Domain to expose adguardhome under";
       type = lib.types.str;
     };
@@ -36,16 +36,40 @@ in
       description = "Host prefix to expose adguardhome with domain";
       type = lib.types.str;
     };
+
+    localTTL = lib.mkOption {
+      default = 300;
+      type = lib.types.int;
+      description = "TTL in seconds for generated local records, also applied to blocked responses";
+    };
+
+    hosts = lib.mkOption {
+      default = { };
+      description = "records to server locally";
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+
+      example = {
+        "nas.home.arpa" = [
+          "192.168.1.10"
+          "fd00::10"
+        ];
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
-    networking.nameservers = [ "127.0.0.80" ];
+    networking.nameservers = [ "127.0.0.1" ];
+
+    ozzie.lab.caddy = lib.mkIf cfg.expose {
+      enable = true;
+      sites."${cfg.host}.${cfg.domain}".upstreams = [ "127.0.0.1:8053" ];
+    };
 
     services = {
       adguardhome = {
         allowDHCP = false;
         enable = true;
-        host = "127.0.0.80";
+        host = "127.0.0.1";
         mutableSettings = false;
         openFirewall = false;
         package = with pkgs; adguardhome;
@@ -89,9 +113,14 @@ in
           };
 
           filtering = {
+            blocked_response_ttl = cfg.localTTL;
             blocking_mode = "nxdomain";
             filtering_enabled = true;
             filters_update_interval = 168;
+
+            rewrites = lib.flatten (
+              lib.mapAttrsToList (domain: addresses: map (answer: { inherit answer domain; }) addresses) cfg.hosts
+            );
           };
 
           querylog = {
@@ -114,7 +143,7 @@ in
           };
 
           services.dns-web = {
-            loadBalancer.servers = [ { url = "http://127.0.0.80:8053"; } ];
+            loadBalancer.servers = [ { url = "http://127.0.0.1:8053"; } ];
           };
         };
       };
