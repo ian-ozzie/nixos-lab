@@ -19,19 +19,15 @@ in
         package = with pkgs; netbird;
 
         clients.personal = {
+          dir.state = "/data/services/netbird";
           hardened = false;
           interface = "wt0";
           name = "netbird";
           port = 51820;
-
-          dir = {
-            baseName = "netbird";
-            state = "/data/services/netbird";
-          };
         };
 
-        ui = lib.mkIf cfg.enableUI {
-          enable = true;
+        ui = {
+          enable = cfg.enableUI;
           package = with pkgs; netbird-ui;
         };
       };
