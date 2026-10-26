@@ -28,6 +28,7 @@
     {
       formatter = forEachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt);
       lib = import ./lib;
+      nixosModules = import ./modules;
 
       checks = forEachSystem (system: {
         lint = (forSystem system).gitHooks.run {
@@ -48,9 +49,5 @@
           hooks = nixHooks;
         };
       });
-
-      nixosModules = {
-        default = import ./.;
-      };
     };
 }
