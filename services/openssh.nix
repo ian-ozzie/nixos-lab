@@ -15,8 +15,8 @@ in
   config = lib.mkIf cfg.enable {
     services = {
       openssh = {
+        authorizedKeysInHomedir = lib.mkDefault false;
         enable = true;
-        openFirewall = lib.mkDefault true;
         package = with pkgs; openssh;
 
         hostKeys = [
@@ -33,17 +33,12 @@ in
 
         settings = {
           AllowUsers = [ ];
+          AuthenticationMethods = "publickey";
           KbdInteractiveAuthentication = false;
           PasswordAuthentication = false;
           PermitRootLogin = lib.mkDefault "no";
         };
       };
-    };
-
-    systemd = {
-      tmpfiles.rules = [
-        "d /data/services/openssh 0755 root root"
-      ];
     };
   };
 }
