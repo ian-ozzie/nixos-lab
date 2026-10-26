@@ -16,8 +16,14 @@ in
     systemd = {
       user = {
         services.atuin-daemon = {
-          serviceConfig.ExecStart = "${pkgs.atuin}/bin/atuin daemon";
+          environment.ATUIN_DAEMON__SYSTEMD_SOCKET = "true";
+          requires = [ "atuin-daemon.socket" ];
           unitConfig.Description = "Atuin Magical Shell History Daemon";
+
+          serviceConfig = {
+            ExecStart = "${pkgs.atuin}/bin/atuin daemon start";
+            Restart = "on-failure";
+          };
         };
 
         sockets.atuin-daemon = {
@@ -25,8 +31,8 @@ in
           wantedBy = [ "sockets.target" ];
 
           socketConfig = {
-            Accept = false;
             ListenStream = "%t/atuin.sock";
+            RemoveOnStop = true;
             SocketMode = "0600";
           };
         };
