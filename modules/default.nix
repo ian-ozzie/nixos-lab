@@ -15,6 +15,7 @@ let
     netbird = import ./netbird.nix;
     ntfy-sh = import ./ntfy-sh.nix;
     openssh = import ./openssh.nix;
+    postgresql = import ./postgresql.nix;
     radicale = import ./radicale.nix;
     redis = import ./redis.nix;
     resolver = import ./resolver.nix;
