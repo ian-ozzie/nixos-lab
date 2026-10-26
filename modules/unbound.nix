@@ -29,6 +29,11 @@ in
       description = "TTL in seconds for generated local records";
     };
 
+    wildcards = lib.mkOption {
+      default = { };
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+    };
+
     hosts = lib.mkOption {
       default = { };
       description = "records to server locally";
@@ -53,19 +58,27 @@ in
         server = {
           access-control = map (address: "${address} allow") cfg.allowed;
           interface = cfg.bind;
+          local-zone = lib.mapAttrsToList (domain: _: ''"${fqdn domain}" redirect'') cfg.wildcards;
           prefetch = lib.mkDefault true;
 
           local-data = lib.flatten (
-            lib.mapAttrsToList (
-              hostname: addresses:
-              map (
-                ip:
-                let
-                  recordType = if lib.hasInfix ":" ip then "AAAA" else "A";
-                in
-                ''"${fqdn hostname} ${toString cfg.localTTL} IN ${recordType} ${ip}"''
-              ) addresses
-            ) cfg.hosts
+            lib.mapAttrsToList
+              (
+                hostname: addresses:
+                map (
+                  ip:
+                  let
+                    recordType = if lib.hasInfix ":" ip then "AAAA" else "A";
+                  in
+                  ''"${fqdn hostname} ${toString cfg.localTTL} IN ${recordType} ${ip}"''
+                ) addresses
+              )
+              (
+                lib.zipAttrsWith (_: lib.concatLists) [
+                  cfg.hosts
+                  cfg.wildcards
+                ]
+              )
           );
         };
       };

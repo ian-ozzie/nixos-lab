@@ -12,6 +12,7 @@ let
       bind
       hosts
       localTTL
+      wildcards
       ;
 
     enable = true;
@@ -46,6 +47,11 @@ in
       default = 300;
       type = lib.types.int;
       description = "TTL in seconds for generated local records";
+    };
+
+    wildcards = lib.mkOption {
+      default = { };
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
     };
 
     hosts = lib.mkOption {

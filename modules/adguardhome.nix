@@ -41,6 +41,11 @@ in
       description = "TTL in seconds for generated local records, also applied to blocked responses";
     };
 
+    wildcards = lib.mkOption {
+      default = { };
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+    };
+
     hosts = lib.mkOption {
       default = { };
       description = "records to server locally";
@@ -116,9 +121,22 @@ in
             filtering_enabled = true;
             filters_update_interval = 168;
 
-            rewrites = lib.flatten (
-              lib.mapAttrsToList (domain: addresses: map (answer: { inherit answer domain; }) addresses) cfg.hosts
-            );
+            rewrites = lib.flatten [
+              (lib.mapAttrsToList (
+                domain: addresses: map (answer: { inherit answer domain; }) addresses
+              ) cfg.hosts)
+              (lib.mapAttrsToList (
+                domain: addresses:
+                map (answer: {
+                  inherit answer;
+                  domain = lib.removeSuffix "." domain;
+                }) addresses
+                ++ map (answer: {
+                  inherit answer;
+                  domain = "*.${lib.removeSuffix "." domain}";
+                }) addresses
+              ) cfg.wildcards)
+            ];
           };
 
           querylog = {
