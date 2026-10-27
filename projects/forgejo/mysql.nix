@@ -40,4 +40,9 @@ in
       };
     }) clients;
   };
+
+  # ...dels/db/collation.go:153:preprocessDatabaseCollation() [W] Current database is using a case-insensitive collation "utf8mb4_unicode_ci", although Forgejo could work with it, there might be some rare cases which don't work as expected.
+  systemd.services.mysql.postStart = lib.mkAfter ''
+    ${config.services.mysql.package}/bin/mariadb --batch -e 'ALTER DATABASE `${projectName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;'
+  '';
 }
