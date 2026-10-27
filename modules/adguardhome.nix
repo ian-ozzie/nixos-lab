@@ -10,7 +10,6 @@ in
 {
   options.ozzie.lab.adguardhome = {
     enable = lib.mkEnableOption "opinionated adguardhome config";
-    expose = lib.mkEnableOption "reverse proxy the web interface through caddy";
 
     allowed = lib.mkOption {
       default = [ "127.0.0.1" ];
@@ -29,21 +28,16 @@ in
       type = lib.types.str;
     };
 
+    expose = lib.mkOption {
+      default = null;
+      description = "reverse proxy the web interface through caddy";
+      type = lib.types.nullOr lib.types.str;
+    };
+
     host = lib.mkOption {
       default = "dns";
       description = "Host prefix to expose adguardhome with domain";
       type = lib.types.str;
-    };
-
-    localTTL = lib.mkOption {
-      default = 300;
-      type = lib.types.int;
-      description = "TTL in seconds for generated local records, also applied to blocked responses";
-    };
-
-    wildcards = lib.mkOption {
-      default = { };
-      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
     };
 
     hosts = lib.mkOption {
@@ -58,14 +52,29 @@ in
         ];
       };
     };
+
+    localTTL = lib.mkOption {
+      default = 300;
+      type = lib.types.int;
+      description = "TTL in seconds for generated local records, also applied to blocked responses";
+    };
+
+    wildcards = lib.mkOption {
+      default = { };
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+    };
   };
 
   config = lib.mkIf cfg.enable {
     networking.nameservers = [ "127.0.0.1" ];
 
-    ozzie.lab.caddy = lib.mkIf cfg.expose {
+    ozzie.lab.caddy = lib.mkIf (cfg.expose != null) {
       enable = true;
-      sites."${cfg.host}.${cfg.domain}".upstreams = [ "127.0.0.1:8053" ];
+
+      sites."${cfg.host}.${cfg.domain}" = {
+        listenAddresses = [ cfg.expose ];
+        upstreams = [ "127.0.0.1:8053" ];
+      };
     };
 
     services = {
