@@ -12,11 +12,16 @@ in
   options.ozzie.lab.syncthing = {
     enable = lib.mkEnableOption "opinionated syncthing config";
     directOnly = lib.mkEnableOption "limit to direct connections";
-    expose = lib.mkEnableOption "reverse proxy the gui through caddy";
 
     domain = lib.mkOption {
       description = "Domain to expose syncthing under";
       type = lib.types.str;
+    };
+
+    expose = lib.mkOption {
+      default = null;
+      description = "reverse proxy the gui through caddy";
+      type = lib.types.nullOr lib.types.str;
     };
 
     group = lib.mkOption {
@@ -39,9 +44,13 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    ozzie.lab.caddy = lib.mkIf cfg.expose {
+    ozzie.lab.caddy = lib.mkIf (cfg.expose != null) {
       enable = true;
-      sites."${cfg.host}.${cfg.domain}".upstreams = [ "127.0.0.1:8384" ];
+
+      sites."${cfg.host}.${cfg.domain}" = {
+        listenAddresses = [ cfg.expose ];
+        upstreams = [ "127.0.0.1:8384" ];
+      };
     };
 
     networking.firewall = {
