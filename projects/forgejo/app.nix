@@ -75,11 +75,6 @@ in
         };
       }) clients
     );
-
-    openssh.settings = lib.mkIf cfg.ssh {
-      AcceptEnv = [ "GIT_PROTOCOL" ];
-      AllowUsers = [ config.services.forgejo.user ];
-    };
   };
 
   systemd.services.forgejo = lib.mkIf localDatabase {

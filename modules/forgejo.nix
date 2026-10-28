@@ -56,6 +56,18 @@ in
       };
     };
 
+    services.openssh = lib.mkIf cfg.ssh {
+      settings = {
+        AcceptEnv = [ "GIT_PROTOCOL" ];
+        AllowUsers = [ config.services.forgejo.user ];
+      };
+
+      extraConfig = ''
+        Match User ${cfg.user}
+          AuthorizedKeysFile %h/.ssh/authorized_keys
+      '';
+    };
+
     users.users = lib.mkIf (cfg.user == "git") {
       git = {
         inherit (config.services.forgejo) group;
