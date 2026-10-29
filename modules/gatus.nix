@@ -50,6 +50,11 @@ in
       default = "gatus";
       type = lib.types.str;
     };
+
+    ntfy = lib.mkOption {
+      default = null;
+      type = lib.types.nullOr lib.types.str;
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -66,7 +71,22 @@ in
       enable = true;
 
       settings = {
-        endpoints = lib.attrValues cfg.endpoints;
+        alerting = {
+          ntfy = lib.mkIf (cfg.ntfy != null) {
+            topic = "gatus";
+            url = cfg.ntfy;
+
+            default-alert = {
+              failure-threshold = 3;
+              send-on-resolved = true;
+              success-threshold = 2;
+            };
+          };
+        };
+
+        endpoints = map (
+          endpoint: lib.optionalAttrs (cfg.ntfy != null) { alerts = [ { type = "ntfy"; } ]; } // endpoint
+        ) (lib.attrValues cfg.endpoints);
 
         web = {
           address = lib.mkDefault "127.0.0.1";
