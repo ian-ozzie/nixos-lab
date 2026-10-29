@@ -52,7 +52,7 @@ in
       ++ [
         (endpoint "router" {
           client.ignore-redirect = true;
-          conditions = healthConditions;
+          conditions = healthConditions ++ [ "[CERTIFICATE_EXPIRATION] > 168h" ];
           url = "https://${project.hostName}/alive";
         })
       ]

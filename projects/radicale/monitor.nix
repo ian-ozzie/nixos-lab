@@ -39,7 +39,7 @@ in
       )
       ++ [
         (endpoint "router" {
-          conditions = healthConditions;
+          conditions = healthConditions ++ [ "[CERTIFICATE_EXPIRATION] > 168h" ];
           url = "https://${project.hostName}/.web/";
         })
       ]

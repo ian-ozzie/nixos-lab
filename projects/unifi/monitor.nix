@@ -25,6 +25,7 @@ in
 {
   ozzie.lab.gatus = {
     enable = true;
+
     endpoints = lib.listToAttrs (
       lib.optionals (!localApp) (
         lib.concatMap (
@@ -40,8 +41,12 @@ in
       )
       ++ [
         (endpoint "router" {
-          conditions = [ "[STATUS] == 200" ];
           url = "https://${project.hostName}/";
+
+          conditions = [
+            "[STATUS] == 200"
+            "[CERTIFICATE_EXPIRATION] > 168h"
+          ];
         })
       ]
     );
