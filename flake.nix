@@ -2,7 +2,7 @@
   description = "Ozzie's NixOS lab configuration";
 
   inputs = {
-    dev-tools.url = "github:ian-ozzie/nix-dev-tools";
+    dev-tools.url = "git+ssh://git/ozzie/nix-dev-tools.git";
     nixpkgs.follows = "dev-tools/nixpkgs";
   };
 

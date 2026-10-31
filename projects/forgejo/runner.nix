@@ -7,13 +7,13 @@ let
   runners = project.runners or [ ];
 in
 {
-  ozzie.lab.gitea-actions-runner = {
+  ozzie.lab.forgejo-runner = {
     inherit runners;
 
     enable = true;
   };
 
-  services.gitea-actions-runner.instances = lib.genAttrs runners (_: {
-    url = "https://${project.hostName}";
+  services.forgejo-runner.instances = lib.genAttrs runners (_: {
+    settings.server.connections.default.url = "https://${project.hostName}";
   });
 }

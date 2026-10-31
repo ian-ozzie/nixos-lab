@@ -8,8 +8,8 @@ let
     atuin-daemon = import ./atuin-daemon.nix;
     caddy = import ./caddy.nix;
     forgejo = import ./forgejo.nix;
+    forgejo-runner = import ./forgejo-runner.nix;
     gatus = import ./gatus.nix;
-    gitea-actions-runner = import ./gitea-actions-runner.nix;
     komga = import ./komga.nix;
     mysql = import ./mysql.nix;
     ncps = import ./ncps.nix;

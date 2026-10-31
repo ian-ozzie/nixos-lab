@@ -5,11 +5,11 @@
   ...
 }:
 let
-  cfg = config.ozzie.lab.gitea-actions-runner;
+  cfg = config.ozzie.lab.forgejo-runner;
 in
 {
-  options.ozzie.lab.gitea-actions-runner = {
-    enable = lib.mkEnableOption "opinionated gitea-actions-runner config";
+  options.ozzie.lab.forgejo-runner = {
+    enable = lib.mkEnableOption "opinionated forgejo-runner config";
 
     runners = lib.mkOption {
       type = lib.types.listOf lib.types.str;
@@ -20,16 +20,12 @@ in
 
   config = lib.mkIf cfg.enable {
     services = {
-      gitea-actions-runner = {
+      forgejo-runner = {
         package = with pkgs; forgejo-runner;
 
         instances = {
           # example-runner = lib.mkIf (builtins.elem "example-runner" cfg.runners) {
           #   enable = true;
-          #   labels = [ "example:host" ];
-          #   name = "example-runner";
-          #   tokenFile = "/data/services/gitea-actions-runner/.example-runner.env";
-          #   url = "https://git.example.com";
           #
           #   hostPackages = with pkgs; [
           #     bash
@@ -42,6 +38,18 @@ in
           #     wget
           #     xc
           #   ];
+          #
+          #   secrets.server.connections.default.token_url =
+          #     "/data/services/forgejo-runner/.example-runner.token";
+          #
+          #   settings = {
+          #     runner.labels = [ "example:host" ];
+          #
+          #     server.connections.default = {
+          #       url = "https://git.example.com";
+          #       uuid = "<runner-uuid>";
+          #     };
+          #   };
           # };
         };
       };
@@ -49,7 +57,7 @@ in
 
     systemd = {
       tmpfiles.rules = [
-        "d /data/services/gitea-actions-runner 0700 root root"
+        "d /data/services/forgejo-runner 0700 root root"
       ];
     };
   };
