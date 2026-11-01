@@ -3,6 +3,7 @@
   port,
   project,
   projectNetwork,
+  putSources,
   ...
 }:
 {
@@ -10,9 +11,6 @@
   memberName,
   ...
 }:
-let
-  putSources = project.putSources or [ ];
-in
 {
   ozzie.lab.caddy = {
     enable = true;

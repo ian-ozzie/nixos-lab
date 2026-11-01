@@ -3,6 +3,7 @@
   port,
   project,
   projectNetwork,
+  putSources,
   ...
 }:
 {
@@ -23,7 +24,7 @@ in
       cache = {
         inherit (project) hostName;
 
-        allowPutVerb = (project.putSources or [ ]) != [ ];
+        allowPutVerb = putSources != [ ];
       };
 
       server.addr =
