@@ -5,7 +5,7 @@ let
     acme = import ./acme.nix;
     adguardhome = import ./adguardhome.nix;
     atuin = import ./atuin.nix;
-    atuin-daemon = import ./atuin-daemon.nix;
+    atuin-server = import ./atuin-server.nix;
     caddy = import ./caddy.nix;
     forgejo = import ./forgejo.nix;
     forgejo-runner = import ./forgejo-runner.nix;

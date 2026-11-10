@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
@@ -9,15 +8,42 @@ let
 in
 {
   options.ozzie.lab.atuin = {
-    enable = lib.mkEnableOption "opinionated atuin server config";
+    enable = lib.mkEnableOption "opinionated atuin config";
   };
 
   config = lib.mkIf cfg.enable {
-    services.atuin = {
-      database.createLocally = lib.mkDefault false;
+    systemd.user.services.atuin-daemon.environment.ATUIN_CONFIG_DIR = "/etc/atuin";
+
+    programs.atuin = {
+      daemon.enable = true;
       enable = true;
-      openRegistration = lib.mkDefault false;
-      package = with pkgs; atuin;
+
+      flags = [
+        "--disable-ai"
+        "--disable-up-arrow"
+      ];
+
+      settings = {
+        auto_sync = true;
+        dialect = "uk";
+        enter_accept = true;
+        exit_mode = "return-original";
+        filter_mode = "host";
+        inline_height = 20;
+        search_mode = "fulltext";
+        show_help = false;
+        show_preview = true;
+        show_tabs = false;
+        style = "compact";
+        update_check = false;
+
+        daemon = {
+          enabled = true;
+          autostart = false;
+          socket_path = "$XDG_RUNTIME_DIR/atuin/atuin.sock";
+          systemd_socket = true;
+        };
+      };
     };
   };
 }

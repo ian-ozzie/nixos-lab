@@ -24,7 +24,7 @@ let
   );
 in
 {
-  ozzie.lab.atuin.enable = true;
+  ozzie.lab.atuin-server.enable = true;
 
   services = {
     atuin = {
