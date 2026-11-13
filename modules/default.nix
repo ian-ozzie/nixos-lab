@@ -2,6 +2,8 @@ let
   modules = {
     users = import ./users;
 
+    meta = ../shared/meta.nix;
+
     acme = import ./acme.nix;
     adguardhome = import ./adguardhome.nix;
     atuin = import ./atuin.nix;
@@ -23,7 +25,6 @@ let
     syncthing = import ./syncthing.nix;
     unbound = import ./unbound.nix;
     unifi = import ./unifi.nix;
-    update-watch = import ./update-check.nix;
     vaultwarden = import ./vaultwarden.nix;
   };
 in

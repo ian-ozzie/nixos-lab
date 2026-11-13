@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -233,5 +234,13 @@ in
         isSystemUser = true;
       };
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/backup/mysql-backup.nix"
+      "nixos/modules/services/databases/mysql.nix"
+      "pkgs/servers/sql/mariadb/default.nix"
+    ];
   };
 }

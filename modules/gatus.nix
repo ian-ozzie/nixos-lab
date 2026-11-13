@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -94,5 +95,12 @@ in
         };
       };
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/monitoring/gatus.nix"
+      "pkgs/by-name/ga/gatus/package.nix"
+    ];
   };
 }

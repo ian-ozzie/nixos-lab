@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -35,5 +36,12 @@ in
         "f /data/services/radicale/users 0700 radicale radicale"
       ];
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/networking/radicale.nix"
+      "pkgs/by-name/ra/radicale/package.nix"
+    ];
   };
 }

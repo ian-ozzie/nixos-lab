@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   ...
 }:
 let
@@ -58,5 +59,11 @@ in
         extraGroups = [ "acme" ];
       };
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/security/acme"
+    ];
   };
 }

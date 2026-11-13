@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -27,5 +28,12 @@ in
         };
       };
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/networking/ncps.nix"
+      "pkgs/by-name/nc/ncps/package.nix"
+    ];
   };
 }

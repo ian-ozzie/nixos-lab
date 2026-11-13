@@ -91,4 +91,11 @@ in
       ];
     };
   };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/networking/syncthing.nix"
+      "pkgs/by-name/sy/syncthing/package.nix"
+    ];
+  };
 }

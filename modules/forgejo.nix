@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -81,5 +82,12 @@ in
         ];
       };
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/misc/forgejo.nix"
+      "pkgs/by-name/fo/forgejo"
+    ];
   };
 }

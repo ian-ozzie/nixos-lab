@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   ...
 }:
 let
@@ -17,5 +18,12 @@ in
       enable = true;
       openRegistration = lib.mkDefault false;
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/misc/atuin.nix"
+      "pkgs/by-name/at/atuin/package.nix"
+    ];
   };
 }

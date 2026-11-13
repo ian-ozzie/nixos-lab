@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   ...
 }:
 let
@@ -32,5 +33,12 @@ in
         "d /data/services/redis 0700 redis redis"
       ];
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/databases/redis.nix"
+      "pkgs/by-name/re/redis/package.nix"
+    ];
   };
 }

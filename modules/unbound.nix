@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   ...
 }:
 let
@@ -83,5 +84,12 @@ in
         };
       };
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/networking/unbound.nix"
+      "pkgs/by-name/un/unbound/package.nix"
+    ];
   };
 }

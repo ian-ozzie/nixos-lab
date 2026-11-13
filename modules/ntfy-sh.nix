@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -28,5 +29,12 @@ in
         "d /data/services/ntfy-sh/templates 0700 ntfy-sh ntfy-sh"
       ];
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/misc/ntfy-sh.nix"
+      "pkgs/by-name/nt/ntfy-sh/package.nix"
+    ];
   };
 }

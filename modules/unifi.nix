@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -33,5 +34,12 @@ in
         "d /data/services/unifi 0700 unifi unifi"
       ];
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/networking/unifi.nix"
+      "pkgs/by-name/un/unifi/package.nix"
+    ];
   };
 }

@@ -1,11 +1,16 @@
 {
   git,
+  homeManagerPaths ? [ ],
   lib,
-  paths,
+  paths ? [ ],
   writeShellApplication,
   writeText,
 }:
 let
+  homeManagerPathsFile = writeText "home-manager-update-check-paths" (
+    lib.concatLines (lib.sort builtins.lessThan (lib.unique homeManagerPaths))
+  );
+
   pathsFile = writeText "nix-update-check-paths" (
     lib.concatLines (lib.sort builtins.lessThan (lib.unique paths))
   );
@@ -31,12 +36,21 @@ writeShellApplication {
     old_rev=$3
     new_rev=$4
 
-    if [[ "$repository" != nixpkgs || ! -s "${pathsFile}" ]]; then
+    case "$repository" in
+      nixpkgs) paths_file="${pathsFile}" ;;
+      home-manager) paths_file="${homeManagerPathsFile}" ;;
+      *)
+        printf 'No checked paths for %s\n' "$repository" >&2
+        exit 0
+        ;;
+    esac
+
+    if [[ ! -s "$paths_file" ]]; then
       printf 'No checked paths for %s\n' "$repository" >&2
       exit 0
     fi
 
-    mapfile -t paths < "${pathsFile}"
+    mapfile -t paths < "$paths_file"
 
     git -C "$checkout" fetch origin
     for rev in "$old_rev" "$new_rev"; do

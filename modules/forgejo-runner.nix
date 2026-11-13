@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -60,5 +61,12 @@ in
         "d /data/services/forgejo-runner 0700 root root"
       ];
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/continuous-integration/forgejo-runner.nix"
+      "pkgs/by-name/fo/forgejo-runner/package.nix"
+    ];
   };
 }

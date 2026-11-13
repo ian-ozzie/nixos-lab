@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -38,5 +39,13 @@ in
         "d /data/services/netbird 0700 root root"
       ];
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/networking/netbird.nix"
+      "pkgs/by-name/ne/netbird/package.nix"
+      "pkgs/by-name/ne/netbird-ui/package.nix"
+    ];
   };
 }

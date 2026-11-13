@@ -28,12 +28,14 @@
     in
     {
       formatter = forEachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt);
+      homeModules = import ./home;
       lib = import ./lib;
       nixosModules = import ./modules;
 
       packages = forEachSystem (system: {
         nix-update-check = nixpkgs.legacyPackages.${system}.callPackage ./packages/nix-update-check.nix {
-          paths = self.updateCheck.nixpkgs;
+          homeManagerPaths = self.updateCheck.home-manager or [ ];
+          paths = self.updateCheck.nixpkgs or [ ];
         };
       });
 

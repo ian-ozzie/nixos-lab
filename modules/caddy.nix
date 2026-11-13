@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -107,5 +108,12 @@ in
         "d /var/log/caddy 0755 caddy caddy"
       ];
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/web-servers/caddy"
+      "pkgs/by-name/ca/caddy/package.nix"
+    ];
   };
 }

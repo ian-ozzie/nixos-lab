@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -26,5 +27,12 @@ in
         SIGNUPS_ALLOWED = lib.mkDefault false;
       };
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/security/vaultwarden/default.nix"
+      "pkgs/by-name/va/vaultwarden"
+    ];
   };
 }

@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -158,5 +159,12 @@ in
         };
       };
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/networking/adguardhome.nix"
+      "pkgs/by-name/ad/adguardhome/package.nix"
+    ];
   };
 }

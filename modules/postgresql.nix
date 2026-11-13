@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -235,5 +236,13 @@ in
     users = lib.mkIf cfg.backup.enable {
       groups.${cfg.backup.group} = { };
     };
+  };
+
+  meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
+    ozzie.updateCheck.nixpkgs = [
+      "nixos/modules/services/backup/postgresql-backup.nix"
+      "nixos/modules/services/databases/postgresql.nix"
+      "pkgs/servers/sql/postgresql"
+    ];
   };
 }
