@@ -10,6 +10,7 @@
     {
       dev-tools,
       nixpkgs,
+      self,
       ...
     }:
     let
@@ -30,6 +31,12 @@
       lib = import ./lib;
       nixosModules = import ./modules;
 
+      packages = forEachSystem (system: {
+        nix-update-check = nixpkgs.legacyPackages.${system}.callPackage ./packages/nix-update-check.nix {
+          paths = self.updateCheck.nixpkgs;
+        };
+      });
+
       checks = forEachSystem (system: {
         lint = (forSystem system).gitHooks.run {
           src = ./.;
@@ -49,5 +56,12 @@
           hooks = nixHooks;
         };
       });
+
+      updateCheck.nixpkgs =
+        lib.unique
+          (lib.nixosSystem {
+            system = "x86_64-linux";
+            modules = [ (import ./modules).default ];
+          }).config.meta.ozzie.updateCheck.nixpkgs;
     };
 }

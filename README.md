@@ -53,3 +53,28 @@ Used by CI to validate flake
 ```bash
 nix flake check
 ```
+
+### show-watched
+
+```
+nix eval --json .#updateWatch
+```
+
+### update-check
+
+Inputs: REPOSITORY, DIFF
+
+Environment: REPOSITORY=nixpkgs, DIFF=
+
+```bash
+diff_args=()
+if [[ -n "$DIFF" ]]; then
+  diff_args+=("$DIFF")
+fi
+
+old_rev=$(jq -er --arg repository "$REPOSITORY" '.nodes[$repository].locked.rev' flake.lock)
+ref=$(jq -er --arg repository "$REPOSITORY" '.nodes[$repository].original.ref' flake.lock)
+
+nix run .#nix-update-check -- "${diff_args[@]}" "$REPOSITORY" \
+  "/data/nixos/$REPOSITORY" "$old_rev" "origin/$ref"
+```
