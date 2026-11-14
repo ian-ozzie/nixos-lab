@@ -14,6 +14,7 @@ let
     gatus = import ./gatus.nix;
     komga = import ./komga.nix;
     mysql = import ./mysql.nix;
+    nat-gateway = import ./nat-gateway.nix;
     ncps = import ./ncps.nix;
     netbird = import ./netbird.nix;
     ntfy-sh = import ./ntfy-sh.nix;
