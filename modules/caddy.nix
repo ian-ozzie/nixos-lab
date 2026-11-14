@@ -9,6 +9,7 @@ let
   inherit (config.ozzie.lab) acme;
 
   cfg = config.ozzie.lab.caddy;
+  isHttp = site: lib.hasPrefix "http://" site.hostname;
 
   siteModule = { name, config, ... }: {
     options = {
@@ -51,9 +52,10 @@ let
       };
 
       upstreams = lib.mkOption {
+        default = [ ];
         description = "addresses to proxy requests to";
         example = [ "10.0.0.2:80" ];
-        type = lib.types.nonEmptyListOf lib.types.str;
+        type = lib.types.listOf lib.types.str;
       };
     };
   };
@@ -73,7 +75,9 @@ in
   config = lib.mkIf cfg.enable {
     ozzie.lab.acme.domains = lib.mkIf acme.enable (
       lib.unique (
-        lib.filter (domain: domain != null) (lib.mapAttrsToList (_: site: site.domain) cfg.sites)
+        lib.filter (domain: domain != null) (
+          lib.mapAttrsToList (_: site: if isHttp site then null else site.domain) cfg.sites
+        )
       )
     );
 
@@ -88,16 +92,18 @@ in
         inherit (site) listenAddresses;
 
         hostName = site.hostname;
-        useACMEHost = if acme.enable then site.domain else null;
+        useACMEHost = if acme.enable && !isHttp site then site.domain else null;
 
         extraConfig = ''
-          ${lib.optionalString (!acme.enable || site.domain == null) "tls internal"}
+          ${lib.optionalString (!isHttp site && (!acme.enable || site.domain == null)) "tls internal"}
 
           ${site.extraConfig}
 
-          reverse_proxy ${lib.concatStringsSep " " site.upstreams} {
-            ${site.proxyConfig}
-          }
+          ${lib.optionalString (site.upstreams != [ ]) ''
+            reverse_proxy ${lib.concatStringsSep " " site.upstreams} {
+              ${site.proxyConfig}
+            }
+          ''}
         '';
       }) cfg.sites;
     };
