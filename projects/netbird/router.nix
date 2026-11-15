@@ -32,6 +32,11 @@
       upstreams = [ "127.0.0.1:${toString port}" ];
 
       extraConfig = ''
+        handle /health/relay {
+          rewrite * /health
+          reverse_proxy ${config.services.netbird.relay.settings.health-listen-address}
+        }
+
         @signalGrpc path /signalexchange.SignalExchange/*
         handle @signalGrpc {
           reverse_proxy h2c://127.0.0.1:${toString config.services.netbird.server.signal.port}
