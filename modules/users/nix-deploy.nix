@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -13,6 +14,7 @@ in
 
   config = lib.mkIf cfg.enable {
     nix.settings.trusted-users = [ "nix-deploy" ];
+    services.openssh.settings.AllowUsers = [ "nix-deploy" ];
 
     security.sudo.extraRules = [
       {
@@ -20,11 +22,11 @@ in
 
         commands = [
           {
-            command = "/run/current-system/sw/bin/env ^NIXOS_INSTALL_BOOTLOADER=0 systemd-run -E LOCALE_ARCHIVE -E NIXOS_INSTALL_BOOTLOADER --collect --no-ask-password --pipe --quiet --service-type=exec --unit=nixos-rebuild-switch-to-configuration /nix/store/[a-z0-9\.-]+/bin/switch-to-configuration [a-z]+$";
+            command = "/nix/store/*/activate-rs";
             options = [ "NOPASSWD" ];
           }
           {
-            command = "/run/current-system/sw/bin/nix-env ^-p /nix/var/nix/profiles/system --set /nix/store/[a-z0-9\.-]+$";
+            command = "/run/current-system/sw/bin/rm ^/tmp/deploy-rs-canary-[a-z0-9]{32}$";
             options = [ "NOPASSWD" ];
           }
         ];
@@ -37,6 +39,7 @@ in
       users.nix-deploy = {
         group = "nix-deploy";
         isSystemUser = true;
+        shell = with pkgs; bash;
       };
     };
   };
