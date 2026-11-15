@@ -5,6 +5,7 @@ let
     meta = ../shared/meta.nix;
 
     acme = import ./acme.nix;
+    actual = import ./actual.nix;
     adguardhome = import ./adguardhome.nix;
     atuin = import ./atuin.nix;
     atuin-server = import ./atuin-server.nix;
