@@ -27,6 +27,12 @@ let
           masquerade = "";
           source."@address" = address;
         }
+        {
+          "@family" = "ipv4";
+          "@priority" = -1;
+          source."@address" = address;
+          tcp-mss-clamp."@value" = "1410";
+        }
       ]) cfg.internalIPs;
     };
   };
