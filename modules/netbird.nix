@@ -7,10 +7,28 @@
 let
   cfg = config.ozzie.lab.netbird;
   client = config.services.netbird.clients.lab;
+  firewalld = config.networking.firewall.backend == "firewalld";
 in
 {
   options.ozzie.lab.netbird = {
     enable = lib.mkEnableOption "opinionated netbird config";
+
+    expose = {
+      tcp = lib.mkOption {
+        default = [ ];
+        type = lib.types.listOf lib.types.port;
+      };
+
+      udp = lib.mkOption {
+        default = [ ];
+        type = lib.types.listOf lib.types.port;
+      };
+
+      icmp = lib.mkOption {
+        default = false;
+        type = lib.types.bool;
+      };
+    };
 
     setupKeyFile = lib.mkOption {
       default = null;
@@ -19,6 +37,24 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    networking.firewall = lib.mkIf (!firewalld) {
+      interfaces.${client.interface} = {
+        allowedTCPPorts = cfg.expose.tcp;
+        allowedUDPPorts = cfg.expose.udp;
+      };
+
+      extraInputRules = lib.mkIf (cfg.expose.icmp && config.networking.firewall.backend == "nftables") ''
+        iifname ${builtins.toJSON client.interface} meta l4proto { icmp, ipv6-icmp } accept
+      '';
+
+      extraCommands = lib.mkIf (cfg.expose.icmp && config.networking.firewall.backend == "iptables") ''
+        iptables -w -A nixos-fw -i ${lib.escapeShellArg client.interface} -p icmp -j nixos-fw-accept
+        ${lib.optionalString config.networking.enableIPv6 ''
+          ip6tables -w -A nixos-fw -i ${lib.escapeShellArg client.interface} -p ipv6-icmp -j nixos-fw-accept
+        ''}
+      '';
+    };
+
     services = {
       netbird = {
         clients.lab = {
@@ -35,14 +71,30 @@ in
         };
       };
 
-      firewalld.zones.netbird.ports =
-        lib.mkIf (config.networking.firewall.backend == "firewalld" && client.openInternalFirewall)
-          [
+      firewalld.zones.netbird = lib.mkIf firewalld {
+        ports =
+          map (port: {
+            inherit port;
+
+            protocol = "tcp";
+          }) cfg.expose.tcp
+          ++ map (port: {
+            inherit port;
+
+            protocol = "udp";
+          }) cfg.expose.udp
+          ++ lib.optionals client.openInternalFirewall [
             {
               port = 22054;
               protocol = "udp";
             }
           ];
+
+        protocols = lib.optionals cfg.expose.icmp [
+          "icmp"
+          "ipv6-icmp"
+        ];
+      };
     };
 
     systemd = {
