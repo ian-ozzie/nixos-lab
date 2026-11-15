@@ -2,42 +2,61 @@
   config,
   lib,
   options,
-  pkgs,
   ...
 }:
 let
   cfg = config.ozzie.lab.netbird;
+  client = config.services.netbird.clients.lab;
 in
 {
   options.ozzie.lab.netbird = {
     enable = lib.mkEnableOption "opinionated netbird config";
-    enableUI = lib.mkEnableOption "opinionated netbird UI config";
+
+    setupKeyFile = lib.mkOption {
+      default = null;
+      type = lib.types.nullOr lib.types.externalPath;
+    };
   };
 
   config = lib.mkIf cfg.enable {
     services = {
       netbird = {
-        package = with pkgs; netbird;
-
-        clients.personal = {
+        clients.lab = {
+          config.ServerSSHAllowed = lib.mkDefault false;
           dir.state = "/data/services/netbird";
-          hardened = false;
           interface = "wt0";
-          name = "netbird";
           port = 51820;
-        };
 
-        ui = {
-          enable = cfg.enableUI;
-          package = with pkgs; netbird-ui;
+          login = lib.mkIf (cfg.setupKeyFile != null) {
+            inherit (cfg) setupKeyFile;
+
+            enable = true;
+          };
         };
       };
+
+      firewalld.zones.netbird.ports =
+        lib.mkIf (config.networking.firewall.backend == "firewalld" && client.openInternalFirewall)
+          [
+            {
+              port = 22054;
+              protocol = "udp";
+            }
+          ];
     };
 
     systemd = {
       tmpfiles.rules = [
-        "d /data/services/netbird 0700 root root"
+        "d ${client.dir.state} 0700 ${client.user.name} ${client.user.group}"
       ];
+
+      services = {
+        ${client.service.name}.serviceConfig.ReadWritePaths = [ client.dir.state ];
+
+        "${client.service.name}-login" = lib.mkIf client.login.enable {
+          serviceConfig.ReadWritePaths = [ client.dir.state ];
+        };
+      };
     };
   };
 

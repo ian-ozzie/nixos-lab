@@ -17,6 +17,7 @@ let
     nat-gateway = import ./nat-gateway.nix;
     ncps = import ./ncps.nix;
     netbird = import ./netbird.nix;
+    netbird-server = import ./netbird-server.nix;
     ntfy-sh = import ./ntfy-sh.nix;
     openssh = import ./openssh.nix;
     php-fpm-app = import ./php-fpm-app.nix;
