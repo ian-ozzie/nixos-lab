@@ -39,4 +39,6 @@ in
   client = import ./client.nix roleArgs;
   monitor = import ./monitor.nix roleArgs;
   router = import ./router.nix roleArgs;
+  routing-client = import ./routing-client.nix roleArgs;
+  routing-server = import ./routing-server.nix roleArgs;
 }
