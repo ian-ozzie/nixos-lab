@@ -9,6 +9,8 @@ let
     adguardhome = import ./adguardhome.nix;
     atuin = import ./atuin.nix;
     atuin-server = import ./atuin-server.nix;
+    beszel-agent = import ./beszel-agent.nix;
+    beszel-hub = import ./beszel-hub.nix;
     caddy = import ./caddy.nix;
     forgejo = import ./forgejo.nix;
     forgejo-runner = import ./forgejo-runner.nix;
