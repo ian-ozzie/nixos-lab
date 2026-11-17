@@ -8,6 +8,7 @@
 let
   backupDatabases = lib.attrNames (lib.filterAttrs (_: database: database.backup) cfg.databases);
   cfg = config.ozzie.lab.postgresql;
+  service = config.services.postgresql;
   databaseNames = lib.attrNames cfg.databases;
   identifier = "[A-Za-z_][A-Za-z0-9_]{0,62}";
   passwordDatabases = lib.filterAttrs (_: database: database.passwordFile != null) cfg.databases;
@@ -65,7 +66,7 @@ in
 
       rcloneConfigFile = lib.mkOption {
         default = null;
-        type = lib.types.nullOr lib.types.str;
+        type = lib.types.nullOr lib.types.externalPath;
       };
 
       target = lib.mkOption {
@@ -98,7 +99,7 @@ in
 
               passwordFile = lib.mkOption {
                 default = null;
-                type = lib.types.nullOr lib.types.str;
+                type = lib.types.nullOr lib.types.externalPath;
               };
             };
           }
@@ -128,6 +129,7 @@ in
 
     services = {
       postgresql = {
+        dataDir = lib.mkOverride 900 "/data/services/postgresql/${service.package.psqlSchema}";
         enable = true;
         enableTCPIP = lib.mkDefault (remoteHosts != [ ]);
         ensureDatabases = databaseNames;
@@ -162,15 +164,19 @@ in
     };
 
     systemd = {
+      tmpfiles.rules = [
+        "d ${service.dataDir} 0700 postgres postgres"
+      ];
+
       services = lib.mkMerge [
         {
           postgresql-accounts = lib.mkIf (cfg.databases != { }) {
             after = [ "postgresql-setup.service" ];
             partOf = [ "postgresql.service" ];
-            path = [ config.services.postgresql.finalPackage ];
+            path = [ service.finalPackage ];
             requires = [ "postgresql-setup.service" ];
             wantedBy = [ "multi-user.target" ];
-            environment.PGPORT = toString config.services.postgresql.settings.port;
+            environment.PGPORT = toString service.settings.port;
 
             script = lib.concatStrings (
               lib.mapAttrsToList (name: database: ''
