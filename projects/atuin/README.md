@@ -1,5 +1,11 @@
 # Atuin
 
+By default registration is disabled, enable with:
+
+```nix
+services.atuin.openRegistration = true;
+```
+
 ## Tasks
 
 ### register
