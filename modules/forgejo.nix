@@ -2,11 +2,11 @@
   config,
   lib,
   options,
-  pkgs,
   ...
 }:
 let
   cfg = config.ozzie.lab.forgejo;
+  service = config.services.forgejo;
 in
 {
   options.ozzie.lab.forgejo = {
@@ -33,7 +33,6 @@ in
   config = lib.mkIf cfg.enable {
     services.forgejo = {
       enable = true;
-      package = with pkgs; forgejo;
       repositoryRoot = lib.mkDefault "/data/services/forgejo/repos";
       stateDir = lib.mkDefault "/data/services/forgejo";
       user = lib.mkDefault cfg.user;
@@ -60,7 +59,7 @@ in
     services.openssh = lib.mkIf cfg.ssh {
       settings = {
         AcceptEnv = [ "GIT_PROTOCOL" ];
-        AllowUsers = [ config.services.forgejo.user ];
+        AllowUsers = [ service.user ];
       };
 
       extraConfig = ''
@@ -71,14 +70,14 @@ in
 
     users.users = lib.mkIf (cfg.user == "git") {
       git = {
-        inherit (config.services.forgejo) group;
+        inherit (service) group;
 
-        home = config.services.forgejo.stateDir;
+        home = service.stateDir;
         isSystemUser = true;
         useDefaultShell = true;
 
-        packages = with pkgs; [
-          forgejo
+        packages = [
+          service.package
         ];
       };
     };
