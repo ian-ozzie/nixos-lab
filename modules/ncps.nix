@@ -2,7 +2,6 @@
   config,
   lib,
   options,
-  pkgs,
   ...
 }:
 let
@@ -16,7 +15,6 @@ in
   config = lib.mkIf cfg.enable {
     services.ncps = {
       enable = true;
-      package = with pkgs; ncps;
 
       cache = {
         maxSize = lib.mkDefault "64G";
