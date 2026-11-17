@@ -2,11 +2,11 @@
   config,
   lib,
   options,
-  pkgs,
   ...
 }:
 let
   cfg = config.ozzie.lab.syncthing;
+  service = config.services.syncthing;
 in
 {
   options.ozzie.lab.syncthing = {
@@ -20,7 +20,7 @@ in
 
     expose = lib.mkOption {
       default = null;
-      description = "reverse proxy the gui through caddy";
+      description = "IP to expose syncthing on via caddy, null to disable";
       type = lib.types.nullOr lib.types.str;
     };
 
@@ -49,32 +49,22 @@ in
 
       sites."${cfg.host}.${cfg.domain}" = {
         listenAddresses = [ cfg.expose ];
-        upstreams = [ "127.0.0.1:8384" ];
+        upstreams = [ service.guiAddress ];
       };
-    };
-
-    networking.firewall = {
-      allowedTCPPorts = [ 22000 ];
-      allowedUDPPorts = [ 22000 ];
     };
 
     services = {
       syncthing = {
-        inherit (cfg) group user;
-
-        configDir = "/data/services/syncthing/config";
-        dataDir = "/data/services/syncthing";
+        configDir = lib.mkDefault "/data/services/syncthing/config";
+        dataDir = lib.mkDefault "/data/services/syncthing";
         enable = true;
-        overrideDevices = false;
-        overrideFolders = false;
-        package = with pkgs; syncthing;
+        group = lib.mkDefault cfg.group;
+        openDefaultPorts = lib.mkDefault true;
+        overrideDevices = lib.mkDefault false;
+        overrideFolders = lib.mkDefault false;
+        user = lib.mkDefault cfg.user;
 
         settings = {
-          gui = {
-            insecureAdminAccess = true;
-            insecureSkipHostcheck = true;
-          };
-
           options = lib.mkIf cfg.directOnly {
             globalAnnounceEnabled = false;
             natEnabled = false;
@@ -87,7 +77,7 @@ in
 
     systemd = {
       tmpfiles.rules = [
-        "d /data/services/syncthing 0700 ${cfg.user} ${cfg.group}"
+        "d ${service.dataDir} 0700 ${service.user} ${service.group}"
       ];
     };
   };
