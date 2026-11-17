@@ -1,3 +1,0 @@
-{
-  genNixOSHosts = import ./genNixOSHosts.nix;
-}

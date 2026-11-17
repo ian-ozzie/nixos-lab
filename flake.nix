@@ -29,7 +29,6 @@
     {
       formatter = forEachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt);
       homeModules = import ./home;
-      lib = import ./lib;
       nixosModules = import ./modules;
 
       packages = forEachSystem (system: {
