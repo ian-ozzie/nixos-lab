@@ -5,7 +5,9 @@
   ...
 }:
 let
-  inherit (config.ozzie.lab) caddy;
+  acmeUser = config.users.users.acme;
+  caddy = config.services.caddy;
+  caddyEnabled = options ? ozzie.lab.caddy.enable && config.ozzie.lab.caddy.enable;
 
   cfg = config.ozzie.lab.acme;
 in
@@ -13,6 +15,7 @@ in
   options.ozzie.lab.acme = {
     enable = lib.mkEnableOption "opinionated acme config";
 
+    # TODO: adjust this to have wildcards specified separately
     domains = lib.mkOption {
       default = [ ];
       description = "domains to issue wildcard certificates for";
@@ -22,22 +25,25 @@ in
     tokenFile = lib.mkOption {
       default = "/data/services/acme/.token";
       description = "file that holds the Cloudflare DNS API token";
-      type = lib.types.str;
+      type = lib.types.externalPath;
     };
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.domains != [ ];
+        message = "ozzie.lab.acme.domains must not be empty when ozzie.lab.acme.enable is true.";
+      }
+    ];
+
     security = {
       acme = {
-        acceptTerms = true;
-
         certs = lib.genAttrs cfg.domains (domain: {
+          inherit (acmeUser) group;
           inherit domain;
 
           extraDomainNames = [ "*.${domain}" ];
-          group = "acme";
-
-          reloadServices = lib.optional caddy.enable "caddy.service";
         });
 
         defaults = {
@@ -49,14 +55,28 @@ in
     };
 
     systemd = {
-      tmpfiles.rules = lib.mkIf (cfg.tokenFile == "/data/services/acme/.token") [
-        "d /data/services/acme 0700 acme acme"
+      mounts = [
+        {
+          what = "/data/services/acme";
+          where = "/var/lib/acme";
+          type = "none";
+          options = "bind,nofail";
+          after = [ "systemd-tmpfiles-setup.service" ];
+          requires = [ "systemd-tmpfiles-setup.service" ];
+          before = [ "acme-setup.service" ];
+          requiredBy = [ "acme-setup.service" ];
+          unitConfig.RequiresMountsFor = "/data/services/acme";
+        }
+      ];
+
+      tmpfiles.rules = [
+        "d /data/services/acme 0755 ${acmeUser.name} ${acmeUser.group}"
       ];
     };
 
-    users.users = {
-      caddy = lib.mkIf caddy.enable {
-        extraGroups = [ "acme" ];
+    users.users = lib.mkIf (caddyEnabled && cfg.domains != [ ]) {
+      ${caddy.user} = {
+        extraGroups = [ acmeUser.group ];
       };
     };
   };
