@@ -7,7 +7,15 @@
 }:
 let
   cfg = config.ozzie.lab.gatus;
+  gatus = config.services.gatus;
+  storageDir = dirOf gatus.settings.storage.path;
   settingsFormat = pkgs.formats.yaml { };
+
+  webAddress =
+    if lib.hasInfix ":" gatus.settings.web.address then
+      "[${gatus.settings.web.address}]"
+    else
+      gatus.settings.web.address;
 in
 {
   options.ozzie.lab.gatus = {
@@ -64,7 +72,7 @@ in
 
       sites."${cfg.host}.${cfg.domain}" = {
         listenAddresses = [ cfg.expose ];
-        upstreams = [ "127.0.0.1:8387" ];
+        upstreams = [ "${webAddress}:${toString gatus.settings.web.port}" ];
       };
     };
 
@@ -111,10 +119,12 @@ in
     };
 
     systemd = {
-      services.gatus.serviceConfig.ReadWritePaths = [ "/data/services/gatus" ];
+      services.gatus.serviceConfig.ReadWritePaths = lib.mkIf (gatus.settings.storage.type == "sqlite") [
+        storageDir
+      ];
 
-      tmpfiles.rules = [
-        "d /data/services/gatus 0700 gatus gatus"
+      tmpfiles.rules = lib.mkIf (gatus.settings.storage.type == "sqlite") [
+        "d ${storageDir} 0700 gatus gatus"
       ];
     };
   };
