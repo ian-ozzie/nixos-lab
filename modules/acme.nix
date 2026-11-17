@@ -10,15 +10,15 @@ let
   caddyEnabled = options ? ozzie.lab.caddy.enable && config.ozzie.lab.caddy.enable;
 
   cfg = config.ozzie.lab.acme;
+  domains = lib.unique (cfg.domains ++ cfg.wildcards);
 in
 {
   options.ozzie.lab.acme = {
     enable = lib.mkEnableOption "opinionated acme config";
 
-    # TODO: adjust this to have wildcards specified separately
     domains = lib.mkOption {
       default = [ ];
-      description = "domains to issue wildcard certificates for";
+      description = "domains to issue certificates for";
       type = lib.types.listOf lib.types.str;
     };
 
@@ -27,23 +27,29 @@ in
       description = "file that holds the Cloudflare DNS API token";
       type = lib.types.externalPath;
     };
+
+    wildcards = lib.mkOption {
+      default = [ ];
+      description = "domains to issue wildcard certificates for";
+      type = lib.types.listOf lib.types.str;
+    };
   };
 
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = cfg.domains != [ ];
-        message = "ozzie.lab.acme.domains must not be empty when ozzie.lab.acme.enable is true.";
+        assertion = domains != [ ];
+        message = "ozzie.lab.acme.domains or ozzie.lab.acme.wildcards must not be empty when ozzie.lab.acme.enable is true.";
       }
     ];
 
     security = {
       acme = {
-        certs = lib.genAttrs cfg.domains (domain: {
+        certs = lib.genAttrs domains (domain: {
           inherit (acmeUser) group;
           inherit domain;
 
-          extraDomainNames = [ "*.${domain}" ];
+          extraDomainNames = lib.optional (lib.elem domain cfg.wildcards) "*.${domain}";
         });
 
         defaults = {
@@ -74,7 +80,7 @@ in
       ];
     };
 
-    users.users = lib.mkIf (caddyEnabled && cfg.domains != [ ]) {
+    users.users = lib.mkIf (caddyEnabled && domains != [ ]) {
       ${caddy.user} = {
         extraGroups = [ acmeUser.group ];
       };

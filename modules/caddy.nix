@@ -72,7 +72,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    ozzie.lab.acme.domains = lib.mkIf acme.enable (
+    ozzie.lab.acme.wildcards = lib.mkIf acme.enable (
       lib.unique (
         lib.filter (domain: domain != null) (
           lib.mapAttrsToList (_: site: if isHttp site then null else site.domain) cfg.sites
