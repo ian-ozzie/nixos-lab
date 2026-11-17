@@ -15,6 +15,7 @@ let
     ++ projectNetwork.addresses "backend" (project.roles.monitor or [ ]);
 in
 {
+  # TODO: Ideally lock this down to localhost to expose via caddy, if possible
   ozzie.lab.unifi.enable = true;
 
   services.firewalld.zones.nixos-fw-default.rules = lib.mkIf (!localApp) (

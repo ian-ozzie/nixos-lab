@@ -19,7 +19,6 @@ in
         enable = true;
         mongodbPackage = with pkgs; mongodb-ce;
         openFirewall = false;
-        unifiPackage = with pkgs; unifi;
       };
     };
 
