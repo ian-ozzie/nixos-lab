@@ -89,11 +89,33 @@ in
           endpoint: lib.optionalAttrs (cfg.ntfy != null) { alerts = [ { type = "ntfy"; } ]; } // endpoint
         ) (lib.attrValues cfg.endpoints);
 
+        storage = {
+          type = lib.mkDefault "sqlite";
+          path = lib.mkDefault "/data/services/gatus/gatus.db";
+        };
+
         web = {
           address = lib.mkDefault "127.0.0.1";
           port = lib.mkDefault 8387;
         };
       };
+    };
+
+    users = {
+      groups.gatus = { };
+
+      users.gatus = {
+        group = "gatus";
+        isSystemUser = true;
+      };
+    };
+
+    systemd = {
+      services.gatus.serviceConfig.ReadWritePaths = [ "/data/services/gatus" ];
+
+      tmpfiles.rules = [
+        "d /data/services/gatus 0700 gatus gatus"
+      ];
     };
   };
 
