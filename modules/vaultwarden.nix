@@ -2,7 +2,6 @@
   config,
   lib,
   options,
-  pkgs,
   ...
 }:
 let
@@ -15,9 +14,8 @@ in
 
   config = lib.mkIf cfg.enable {
     services.vaultwarden = {
-      dbBackend = "mysql";
+      dbBackend = lib.mkDefault "mysql";
       enable = true;
-      package = with pkgs; vaultwarden;
 
       config = {
         ROCKET_ADDRESS = lib.mkDefault "127.0.0.1";
@@ -26,6 +24,16 @@ in
 
         SIGNUPS_ALLOWED = lib.mkDefault false;
       };
+    };
+
+    systemd = {
+      services.vaultwarden.serviceConfig.BindPaths = [
+        "/data/services/vaultwarden:/var/lib/${config.systemd.services.vaultwarden.serviceConfig.StateDirectory}"
+      ];
+
+      tmpfiles.rules = [
+        "d /data/services/vaultwarden 0700 ${config.users.users.vaultwarden.name} ${config.users.groups.vaultwarden.name}"
+      ];
     };
   };
 
