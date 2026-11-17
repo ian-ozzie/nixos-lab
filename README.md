@@ -57,7 +57,7 @@ nix flake check
 ### show-watched
 
 ```
-nix eval --json .#updateWatch
+nix eval --json .#updateCheck
 ```
 
 ### update-check
