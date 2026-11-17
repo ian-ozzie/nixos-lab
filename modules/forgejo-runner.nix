@@ -2,7 +2,6 @@
   config,
   lib,
   options,
-  pkgs,
   ...
 }:
 let
@@ -22,9 +21,8 @@ in
   config = lib.mkIf cfg.enable {
     services = {
       forgejo-runner = {
-        package = with pkgs; forgejo-runner;
-
         instances = {
+          # Rough example that covers the base packages, sops handling secrets
           # example-runner = lib.mkIf (builtins.elem "example-runner" cfg.runners) {
           #   enable = true;
           #
@@ -35,13 +33,16 @@ in
           #     gawk
           #     gitMinimal
           #     gnused
+          #     jq
           #     nodejs
+          #     openssh
           #     wget
           #     xc
           #   ];
           #
-          #   secrets.server.connections.default.token_url =
-          #     "/data/services/forgejo-runner/.example-runner.token";
+          #   secrets.server.connections = {
+          #     default.token_url = config.sops.secrets."runners/example-runner/default/token".path;
+          #   };
           #
           #   settings = {
           #     runner.labels = [ "example:host" ];
@@ -54,12 +55,6 @@ in
           # };
         };
       };
-    };
-
-    systemd = {
-      tmpfiles.rules = [
-        "d /data/services/forgejo-runner 0700 root root"
-      ];
     };
   };
 
