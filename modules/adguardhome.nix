@@ -2,11 +2,23 @@
   config,
   lib,
   options,
-  pkgs,
   ...
 }:
 let
   cfg = config.ozzie.lab.adguardhome;
+  service = config.services.adguardhome;
+
+  resolverAddresses = lib.unique (
+    map (
+      address:
+      if address == "0.0.0.0" then
+        "127.0.0.1"
+      else if address == "::" then
+        "::1"
+      else
+        address
+    ) cfg.bind
+  );
 in
 {
   options.ozzie.lab.adguardhome = {
@@ -14,13 +26,13 @@ in
 
     allowed = lib.mkOption {
       default = [ "127.0.0.1" ];
-      description = "Default addresses to allow";
+      description = "Default addresses, CIDR ranges, or client IDs to allow";
       type = lib.types.listOf lib.types.str;
     };
 
     bind = lib.mkOption {
       default = [ "127.0.0.1" ];
-      description = "Default host to bind dns resolver to";
+      description = "Addresses to bind the DNS resolver to";
       type = lib.types.listOf lib.types.str;
     };
 
@@ -31,7 +43,7 @@ in
 
     expose = lib.mkOption {
       default = null;
-      description = "reverse proxy the web interface through caddy";
+      description = "IP to expose adguardhome on via caddy, null to disable";
       type = lib.types.nullOr lib.types.str;
     };
 
@@ -43,7 +55,7 @@ in
 
     hosts = lib.mkOption {
       default = { };
-      description = "records to server locally";
+      description = "Records to serve locally";
       type = lib.types.attrsOf (lib.types.listOf lib.types.str);
 
       example = {
@@ -56,25 +68,33 @@ in
 
     localTTL = lib.mkOption {
       default = 300;
-      type = lib.types.int;
+      type = lib.types.ints.u32;
       description = "TTL in seconds for generated local records, also applied to blocked responses";
     };
 
     wildcards = lib.mkOption {
       default = { };
+      description = "Records to serve locally for each domain and its subdomains";
       type = lib.types.attrsOf (lib.types.listOf lib.types.str);
     };
   };
 
   config = lib.mkIf cfg.enable {
-    networking.nameservers = [ "127.0.0.1" ];
+    assertions = [
+      {
+        assertion = cfg.bind != [ ];
+        message = "ozzie.lab.adguardhome.bind must contain at least one address";
+      }
+    ];
+
+    networking.nameservers = resolverAddresses;
 
     ozzie.lab.caddy = lib.mkIf (cfg.expose != null) {
       enable = true;
 
       sites."${cfg.host}.${cfg.domain}" = {
         listenAddresses = [ cfg.expose ];
-        upstreams = [ "127.0.0.1:8053" ];
+        upstreams = [ service.settings.http.address ];
       };
     };
 
@@ -82,16 +102,11 @@ in
       adguardhome = {
         allowDHCP = false;
         enable = true;
-        host = "127.0.0.1";
         mutableSettings = false;
         openFirewall = false;
-        package = with pkgs; adguardhome;
-        port = 8053;
 
         settings = {
-          schema_version = 28;
-          theme = "dark";
-          users = [ ];
+          http.address = lib.mkDefault "127.0.0.1:8053";
 
           clients = {
             persistent = [
@@ -106,8 +121,7 @@ in
           };
 
           dns = {
-            aaaa_disabled = true;
-            allowed_clients = cfg.allowed;
+            aaaa_disabled = lib.mkDefault false;
             bind_hosts = cfg.bind;
             cache_optimistic = true;
             cache_size = 16777216;
@@ -115,9 +129,13 @@ in
             cache_ttl_min = 900;
             enable_dnssec = true;
             fallback_dns = [ "https://9.9.9.9/dns-query" ];
-            ports = "53";
-            ratelimit_whitelist = [ "127.0.0.1" ];
+            port = 53;
+            ratelimit_whitelist = resolverAddresses;
             upstream_dns = [ "https://1.1.1.1/dns-query" ];
+
+            allowed_clients = lib.optionals (cfg.allowed != [ ]) (
+              lib.unique (cfg.allowed ++ resolverAddresses)
+            );
 
             bootstrap_dns = [
               "1.1.1.1"
@@ -133,17 +151,27 @@ in
 
             rewrites = lib.flatten [
               (lib.mapAttrsToList (
-                domain: addresses: map (answer: { inherit answer domain; }) addresses
+                domain: addresses:
+                map (answer: {
+                  inherit answer;
+
+                  domain = lib.removeSuffix "." domain;
+                  enabled = true;
+                }) addresses
               ) cfg.hosts)
               (lib.mapAttrsToList (
                 domain: addresses:
                 map (answer: {
                   inherit answer;
+
                   domain = lib.removeSuffix "." domain;
+                  enabled = true;
                 }) addresses
                 ++ map (answer: {
                   inherit answer;
+
                   domain = "*.${lib.removeSuffix "." domain}";
+                  enabled = true;
                 }) addresses
               ) cfg.wildcards)
             ];
@@ -158,6 +186,25 @@ in
           };
         };
       };
+    };
+
+    users = {
+      groups.adguardhome = { };
+
+      users.adguardhome = {
+        group = "adguardhome";
+        isSystemUser = true;
+      };
+    };
+
+    systemd = {
+      services.adguardhome.serviceConfig.BindPaths = [
+        "/data/services/adguardhome:/var/lib/AdGuardHome"
+      ];
+
+      tmpfiles.rules = [
+        "d /data/services/adguardhome 0700 adguardhome adguardhome"
+      ];
     };
   };
 
