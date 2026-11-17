@@ -6,6 +6,7 @@
 }:
 let
   cfg = config.ozzie.lab.redis;
+  server = config.services.redis.servers."";
 in
 {
   options.ozzie.lab.redis = {
@@ -30,7 +31,7 @@ in
       };
 
       tmpfiles.rules = [
-        "d /data/services/redis 0700 redis redis"
+        "d /data/services/redis 0700 ${server.user} ${server.group}"
       ];
     };
   };
