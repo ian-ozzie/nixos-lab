@@ -7,6 +7,7 @@
 let
   cfg = config.ozzie.lab.unbound;
   fqdn = hostname: "${lib.removeSuffix "." hostname}.";
+  service = config.services.unbound;
 in
 {
   options.ozzie.lab.unbound = {
@@ -32,12 +33,13 @@ in
 
     wildcards = lib.mkOption {
       default = { };
+      description = "Records to serve locally, with a redirect for the zone";
       type = lib.types.attrsOf (lib.types.listOf lib.types.str);
     };
 
     hosts = lib.mkOption {
       default = { };
-      description = "records to server locally";
+      description = "Records to serve locally";
       type = lib.types.attrsOf (lib.types.listOf lib.types.str);
 
       example = {
@@ -54,6 +56,7 @@ in
 
     services.unbound = {
       enable = true;
+      stateDir = lib.mkDefault "/data/services/unbound";
 
       settings = {
         server = {
@@ -84,6 +87,10 @@ in
         };
       };
     };
+
+    systemd.tmpfiles.rules = [
+      "d ${service.stateDir} 0700 ${service.user} ${service.group}"
+    ];
   };
 
   meta = lib.optionalAttrs (options ? meta.ozzie.updateCheck.nixpkgs) {
