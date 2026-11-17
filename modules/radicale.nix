@@ -2,11 +2,11 @@
   config,
   lib,
   options,
-  pkgs,
   ...
 }:
 let
   cfg = config.ozzie.lab.radicale;
+  service = config.services.radicale;
 in
 {
   options.ozzie.lab.radicale = {
@@ -16,7 +16,6 @@ in
   config = lib.mkIf cfg.enable {
     services.radicale = {
       enable = true;
-      package = with pkgs; radicale;
 
       settings = {
         storage.filesystem_folder = lib.mkDefault "/data/services/radicale/collections";
@@ -30,11 +29,16 @@ in
     };
 
     systemd = {
-      tmpfiles.rules = [
-        "d /data/services/radicale 0700 radicale radicale"
-        "d /data/services/radicale/collections 0700 radicale radicale"
-        "f /data/services/radicale/users 0700 radicale radicale"
-      ];
+      tmpfiles.rules = lib.unique (
+        [
+          "d ${dirOf service.settings.storage.filesystem_folder} 0700 ${service.user} ${service.group}"
+          "d ${service.settings.storage.filesystem_folder} 0700 ${service.user} ${service.group}"
+        ]
+        ++ lib.optionals (service.settings.auth.type == "htpasswd") [
+          "d ${dirOf service.settings.auth.htpasswd_filename} 0700 ${service.user} ${service.group}"
+          "f ${service.settings.auth.htpasswd_filename} 0700 ${service.user} ${service.group}"
+        ]
+      );
     };
   };
 
