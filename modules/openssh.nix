@@ -2,11 +2,11 @@
   config,
   lib,
   options,
-  pkgs,
   ...
 }:
 let
   cfg = config.ozzie.lab.openssh;
+  service = config.services.openssh;
 in
 {
   options.ozzie.lab.openssh = {
@@ -14,11 +14,17 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = service.settings.AllowUsers != [ ];
+        message = "ozzie.lab.openssh requires services.openssh.settings.AllowUsers to be non-empty";
+      }
+    ];
+
     services = {
       openssh = {
         authorizedKeysInHomedir = lib.mkDefault false;
         enable = true;
-        package = with pkgs; openssh;
 
         hostKeys = [
           {
