@@ -2,13 +2,13 @@
   config,
   lib,
   options,
-  pkgs,
   ...
 }:
 let
   inherit (config.ozzie.lab) acme;
 
   cfg = config.ozzie.lab.caddy;
+  service = config.services.caddy;
   isHttp = site: lib.hasPrefix "http://" site.hostname;
 
   siteModule = { name, config, ... }: {
@@ -63,11 +63,10 @@ in
 {
   options.ozzie.lab.caddy = {
     enable = lib.mkEnableOption "opinionated caddy config";
-    package = lib.mkPackageOption pkgs "caddy" { };
 
     sites = lib.mkOption {
       default = { };
-      description = "sites to reverse proxy";
+      description = "sites to serve";
       type = lib.types.attrsOf (lib.types.submodule siteModule);
     };
   };
@@ -82,10 +81,8 @@ in
     );
 
     services.caddy = {
-      inherit (cfg) package;
-
       enable = true;
-      dataDir = "/data/services/caddy";
+      dataDir = lib.mkDefault "/data/services/caddy";
       openFirewall = lib.mkDefault true;
 
       virtualHosts = lib.mapAttrs (_: site: {
@@ -110,8 +107,8 @@ in
 
     systemd = {
       tmpfiles.rules = [
-        "d /data/services/caddy 0700 caddy caddy"
-        "d /var/log/caddy 0755 caddy caddy"
+        "d ${service.dataDir} 0700 ${service.user} ${service.group}"
+        "d ${service.logDir} 0755 ${service.user} ${service.group}"
       ];
     };
   };
