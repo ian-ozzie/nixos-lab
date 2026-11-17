@@ -8,6 +8,7 @@
 let
   backupDatabases = lib.attrNames (lib.filterAttrs (_: database: database.backup) cfg.databases);
   cfg = config.ozzie.lab.mysql;
+  service = config.services.mysql;
   databaseNames = lib.attrNames cfg.databases;
   escapeDatabase = name: lib.replaceStrings [ "_" ] [ "\\_" ] name;
   passwordDatabases = lib.filterAttrs (_: database: database.passwordFile != null) cfg.databases;
@@ -55,7 +56,7 @@ in
 
       rcloneConfigFile = lib.mkOption {
         default = null;
-        type = lib.types.nullOr lib.types.str;
+        type = lib.types.nullOr lib.types.externalPath;
       };
 
       target = lib.mkOption {
@@ -93,7 +94,7 @@ in
 
               passwordFile = lib.mkOption {
                 default = null;
-                type = lib.types.nullOr lib.types.str;
+                type = lib.types.nullOr lib.types.externalPath;
               };
             };
           }
@@ -123,6 +124,7 @@ in
 
     services = {
       mysql = {
+        dataDir = lib.mkDefault "/data/services/mysql";
         enable = true;
         ensureDatabases = databaseNames;
         package = with pkgs; mariadb;
@@ -161,7 +163,7 @@ in
         mysql-accounts = lib.mkIf (passwordDatabases != { }) {
           after = [ "mysql.service" ];
           partOf = [ "mysql.service" ];
-          path = [ config.services.mysql.package ];
+          path = [ service.package ];
           requires = [ "mysql.service" ];
           wantedBy = [ "multi-user.target" ];
 
@@ -187,7 +189,7 @@ in
           serviceConfig = {
             RemainAfterExit = true;
             Type = "oneshot";
-            User = config.services.mysql.user;
+            User = service.user;
 
             LoadCredential = lib.mapAttrsToList (
               name: database: "${name}:${database.passwordFile}"
