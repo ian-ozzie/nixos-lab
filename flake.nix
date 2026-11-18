@@ -39,6 +39,21 @@
       });
 
       checks = forEachSystem (system: {
+        caddy-security =
+          (lib.nixosSystem {
+            inherit system;
+
+            modules = [
+              self.nixosModules.default
+              {
+                ozzie.lab.caddy = {
+                  enable = true;
+                  security.enable = true;
+                };
+              }
+            ];
+          }).config.services.caddy.package;
+
         lint = (forSystem system).gitHooks.run {
           src = ./.;
           hooks = hooks.without [ "nix-flake-check" ] nixHooks;

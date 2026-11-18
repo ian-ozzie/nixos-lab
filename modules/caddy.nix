@@ -2,6 +2,7 @@
   config,
   lib,
   options,
+  pkgs,
   ...
 }:
 let
@@ -13,6 +14,11 @@ let
 
   siteModule = { name, config, ... }: {
     options = {
+      authorizationPolicy = lib.mkOption {
+        default = null;
+        type = lib.types.nullOr lib.types.str;
+      };
+
       domain = lib.mkOption {
         default = lib.concatStringsSep "." (lib.tail (lib.splitString "." config.hostname));
         defaultText = lib.literalExpression "site hostname with its first label removed";
@@ -64,6 +70,49 @@ in
   options.ozzie.lab.caddy = {
     enable = lib.mkEnableOption "opinionated caddy config";
 
+    environmentFile = lib.mkOption {
+      default = null;
+      type = lib.types.nullOr lib.types.path;
+    };
+
+    security = {
+      enable = lib.mkEnableOption "opinionated caddy-security config";
+
+      extraConfig = lib.mkOption {
+        default = "";
+        type = lib.types.lines;
+      };
+
+      local = lib.mkOption {
+        default = false;
+        type = lib.types.bool;
+      };
+
+      package = lib.mkOption {
+        type = lib.types.package;
+
+        default = pkgs.caddy.withPlugins {
+          hash = "sha256-DKuYSDleJfcmVeneA9/ksjJDIvUtY7tykVZssx694BA=";
+          plugins = [ "github.com/greenpau/caddy-security@v1.6.2" ];
+        };
+      };
+
+      persistState = lib.mkOption {
+        default = false;
+        type = lib.types.bool;
+      };
+
+      portals = lib.mkOption {
+        default = { };
+        type = lib.types.attrsOf lib.types.lines;
+      };
+
+      policies = lib.mkOption {
+        default = { };
+        type = lib.types.attrsOf lib.types.lines;
+      };
+    };
+
     sites = lib.mkOption {
       default = { };
       description = "sites to serve";
@@ -72,6 +121,11 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = lib.mapAttrsToList (name: site: {
+      assertion = site.authorizationPolicy == null || cfg.security.enable;
+      message = "ozzie.lab.caddy: site '${name}' requires security.enable when authorizationPolicy is configured";
+    }) cfg.sites;
+
     ozzie.lab.acme.wildcards = lib.mkIf acme.enable (
       lib.unique (
         lib.filter (domain: domain != null) (
@@ -80,10 +134,59 @@ in
       )
     );
 
+    ozzie.lab.caddy.security = {
+      enable = lib.mkIf (cfg.security.local || cfg.security.persistState) (lib.mkDefault true);
+
+      extraConfig = lib.mkMerge [
+        (lib.mkIf cfg.security.local ''
+          local identity store localdb {
+            realm local
+            path ${builtins.toJSON "${service.dataDir}/users.json"}
+          }
+        '')
+
+        (lib.mkIf cfg.security.persistState ''
+          state {
+            directory ${builtins.toJSON "${service.dataDir}/runtime"}
+          }
+        '')
+      ];
+
+      portals.local = lib.mkIf cfg.security.local ''
+        enable identity store localdb
+        enable admin api
+      '';
+    };
+
     services.caddy = {
-      enable = true;
       dataDir = lib.mkDefault "/data/services/caddy";
+      enable = true;
+      enableReload = lib.mkIf cfg.security.persistState false;
+      environmentFile = lib.mkIf (cfg.environmentFile != null) cfg.environmentFile;
       openFirewall = lib.mkDefault true;
+      package = lib.mkIf cfg.security.enable cfg.security.package;
+
+      globalConfig = lib.mkIf cfg.security.enable ''
+        security {
+          ${cfg.security.extraConfig}
+
+          ${lib.concatStringsSep "\n" (
+            lib.mapAttrsToList (name: body: ''
+              authentication portal ${builtins.toJSON name} {
+                ${body}
+              }
+            '') cfg.security.portals
+          )}
+
+          ${lib.concatStringsSep "\n" (
+            lib.mapAttrsToList (name: body: ''
+              authorization policy ${builtins.toJSON name} {
+                ${body}
+              }
+            '') cfg.security.policies
+          )}
+        }
+      '';
 
       virtualHosts = lib.mapAttrs (_: site: {
         inherit (site) listenAddresses;
@@ -93,6 +196,10 @@ in
 
         extraConfig = ''
           ${lib.optionalString (!isHttp site && (!acme.enable || site.domain == null)) "tls internal"}
+
+          ${lib.optionalString (site.authorizationPolicy != null) ''
+            authorize with ${builtins.toJSON site.authorizationPolicy}
+          ''}
 
           ${site.extraConfig}
 
