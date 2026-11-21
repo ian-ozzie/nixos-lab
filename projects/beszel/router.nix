@@ -14,6 +14,18 @@
     enable = true;
 
     sites.${project.hostName} = {
+      authorizationPolicy = project.authorizationPolicy or null;
+
+      authorizationBypasses = [
+        {
+          paths = [ "/api/beszel/agent-connect" ];
+        }
+        {
+          paths = [ "/api/health" ];
+          sources = projectNetwork.addresses "frontend" (project.roles.monitor or [ ]);
+        }
+      ];
+
       listenAddresses = [
         (projectNetwork.address "frontend" memberName)
       ];

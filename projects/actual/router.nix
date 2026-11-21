@@ -14,6 +14,15 @@
     enable = true;
 
     sites.${project.hostName} = {
+      authorizationPolicy = project.authorizationPolicy or null;
+
+      authorizationBypasses = [
+        {
+          paths = [ "/health" ];
+          sources = projectNetwork.addresses "frontend" (project.roles.monitor or [ ]);
+        }
+      ];
+
       listenAddresses = [
         (projectNetwork.address "frontend" memberName)
       ];

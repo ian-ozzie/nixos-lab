@@ -26,6 +26,7 @@ in
 
     forgejo = {
       enable = true;
+      sso = lib.mkIf ((project.authorizationPolicy or null) != null) true;
 
       ssoProxy = lib.mkIf (!localApp) (
         lib.concatStringsSep "," (projectNetwork.addresses "backend" project.roles.router)

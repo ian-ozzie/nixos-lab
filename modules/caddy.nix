@@ -14,6 +14,24 @@ let
 
   siteModule = { name, config, ... }: {
     options = {
+      authorizationBypasses = lib.mkOption {
+        default = [ ];
+        type = lib.types.listOf (
+          lib.types.submodule {
+            options = {
+              paths = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+              };
+
+              sources = lib.mkOption {
+                default = null;
+                type = lib.types.nullOr (lib.types.listOf lib.types.str);
+              };
+            };
+          }
+        );
+      };
+
       authorizationPolicy = lib.mkOption {
         default = null;
         type = lib.types.nullOr lib.types.str;
@@ -215,28 +233,51 @@ in
         }
       '';
 
-      virtualHosts = lib.mapAttrs (_: site: {
-        inherit (site) listenAddresses;
+      virtualHosts = lib.mapAttrs (
+        _: site:
+        let
+          bypasses = lib.filter (
+            bypass: bypass.paths != [ ] && bypass.sources != [ ]
+          ) site.authorizationBypasses;
+        in
+        {
+          inherit (site) listenAddresses;
 
-        hostName = site.hostname;
-        useACMEHost = if acme.enable && !isHttp site then site.domain else null;
+          hostName = site.hostname;
+          useACMEHost = if acme.enable && !isHttp site then site.domain else null;
 
-        extraConfig = ''
-          ${lib.optionalString (!isHttp site && (!acme.enable || site.domain == null)) "tls internal"}
+          extraConfig = ''
+            ${lib.optionalString (!isHttp site && (!acme.enable || site.domain == null)) "tls internal"}
 
-          ${lib.optionalString (site.authorizationPolicy != null) ''
-            authorize with ${builtins.toJSON site.authorizationPolicy}
-          ''}
+            ${lib.optionalString (site.authorizationPolicy != null) ''
+              ${lib.optionalString (bypasses != [ ]) ''
+                @authorizationRequired {
+                  ${lib.concatMapStringsSep "\n" (bypass: ''
+                    not {
+                      path ${lib.concatMapStringsSep " " builtins.toJSON bypass.paths}
+                      ${lib.optionalString (bypass.sources != null) ''
+                        remote_ip ${lib.concatMapStringsSep " " builtins.toJSON bypass.sources}
+                      ''}
+                    }
+                  '') bypasses}
+                }
+              ''}
 
-          ${site.extraConfig}
+              authorize ${
+                lib.optionalString (bypasses != [ ]) "@authorizationRequired"
+              } with ${builtins.toJSON site.authorizationPolicy}
+            ''}
 
-          ${lib.optionalString (site.upstreams != [ ]) ''
-            reverse_proxy ${lib.concatStringsSep " " site.upstreams} {
-              ${site.proxyConfig}
-            }
-          ''}
-        '';
-      }) cfg.sites;
+            ${site.extraConfig}
+
+            ${lib.optionalString (site.upstreams != [ ]) ''
+              reverse_proxy ${lib.concatStringsSep " " site.upstreams} {
+                ${site.proxyConfig}
+              }
+            ''}
+          '';
+        }
+      ) cfg.sites;
     };
 
     systemd = {

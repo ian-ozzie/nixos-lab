@@ -25,6 +25,15 @@ in
     enable = true;
 
     sites.${project.hostName} = {
+      authorizationPolicy = project.authorizationPolicy or null;
+
+      authorizationBypasses = [
+        {
+          paths = [ "/" ];
+          sources = projectNetwork.addresses "frontend" (project.roles.monitor or [ ]);
+        }
+      ];
+
       inherit listenAddresses;
 
       upstreams = map (endpoint: "https://${endpoint}") (endpoints ports.https);

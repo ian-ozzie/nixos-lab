@@ -39,8 +39,20 @@ in
       )
       ++ [
         (endpoint "router" {
+          client.ignore-redirect = (project.authorizationPolicy or null) != null;
           conditions = healthConditions ++ [ "[CERTIFICATE_EXPIRATION] > 168h" ];
           url = "https://${project.hostName}/api/health";
+        })
+      ]
+      ++ lib.optionals ((project.authorizationPolicy or null) != null) [
+        (endpoint "sso" {
+          client.ignore-redirect = true;
+          url = "https://${project.hostName}/";
+
+          conditions = [
+            "[STATUS] == 302"
+            "[CERTIFICATE_EXPIRATION] > 168h"
+          ];
         })
       ]
     );

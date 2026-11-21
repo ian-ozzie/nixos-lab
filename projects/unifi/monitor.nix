@@ -49,6 +49,17 @@ in
           ];
         })
       ]
+      ++ lib.optionals ((project.authorizationPolicy or null) != null) [
+        (endpoint "sso" {
+          client.ignore-redirect = true;
+          url = "https://${project.hostName}/manage";
+
+          conditions = [
+            "[STATUS] == 302"
+            "[CERTIFICATE_EXPIRATION] > 168h"
+          ];
+        })
+      ]
     );
   };
 }
