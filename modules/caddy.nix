@@ -78,6 +78,11 @@ in
     security = {
       enable = lib.mkEnableOption "opinionated caddy-security config";
 
+      authUrl = lib.mkOption {
+        default = null;
+        type = lib.types.nullOr lib.types.str;
+      };
+
       extraConfig = lib.mkOption {
         default = "";
         type = lib.types.lines;
@@ -110,6 +115,16 @@ in
       policies = lib.mkOption {
         default = { };
         type = lib.types.attrsOf lib.types.lines;
+      };
+
+      signingKeyFile = lib.mkOption {
+        default = null;
+        type = lib.types.nullOr lib.types.externalPath;
+      };
+
+      verificationKeyFile = lib.mkOption {
+        default = null;
+        type = lib.types.nullOr lib.types.externalPath;
       };
     };
 
@@ -173,6 +188,10 @@ in
           ${lib.concatStringsSep "\n" (
             lib.mapAttrsToList (name: body: ''
               authentication portal ${builtins.toJSON name} {
+                ${lib.optionalString (cfg.security.signingKeyFile != null) ''
+                  crypto key portal sign-verify from file ${builtins.toJSON cfg.security.signingKeyFile}
+                ''}
+
                 ${body}
               }
             '') cfg.security.portals
@@ -181,6 +200,14 @@ in
           ${lib.concatStringsSep "\n" (
             lib.mapAttrsToList (name: body: ''
               authorization policy ${builtins.toJSON name} {
+                ${lib.optionalString (cfg.security.authUrl != null) ''
+                  set auth url ${builtins.toJSON cfg.security.authUrl}
+                ''}
+
+                ${lib.optionalString (cfg.security.verificationKeyFile != null) ''
+                  crypto key portal verify from file ${builtins.toJSON cfg.security.verificationKeyFile}
+                ''}
+
                 ${body}
               }
             '') cfg.security.policies

@@ -55,6 +55,82 @@ caddy-env: |
   AUTHP_ADMIN_SECRET=<private-bootstrap-password>
 ```
 
+### Portal and apps on separate servers
+
+Run the portal on `server-a` and authorize apps routed by `server-b`
+
+```nix
+projects = {
+  auth = {
+    roles = {
+      router = "server-a";
+
+      authorization = [
+        "server-b"
+      ];
+    };
+
+    policies.users = ''
+      allow roles staff authp/admin
+    '';
+  };
+};
+```
+
+#### server-a
+
+```nix
+{
+  config,
+  ...
+}:
+{
+  ozzie.lab.caddy.security.signingKeyFile = config.sops.secrets.auth-signing-key.path;
+
+  sops.secrets.auth-signing-key = {
+    mode = "0400";
+    owner = config.services.caddy.user;
+    path = "/run/secrets/auth-signing-key.pem";
+    restartUnits = [ "caddy.service" ];
+    sopsFile = ./secrets.yaml;
+  };
+}
+```
+
+secrets.yaml
+
+```yaml
+auth-signing-key: |
+  `openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out -`
+```
+
+#### server-b
+
+```nix
+{
+  config,
+  ...
+}:
+{
+  ozzie.lab.caddy.security.verificationKeyFile = config.sops.secrets.auth-verification-key.path;
+
+  sops.secrets.auth-verification-key = {
+    mode = "0400";
+    owner = config.services.caddy.user;
+    path = "/run/secrets/auth-verification-key.pem";
+    restartUnits = [ "caddy.service" ];
+    sopsFile = ./secrets.yaml;
+  };
+}
+```
+
+secrets.yaml (public key generated off the signing key on `server-a`)
+
+```yaml
+auth-verification-key: |
+  `openssl pkey -in auth-signing-key.pem -pubout`
+```
+
 ### OIDC
 
 This is configuring a Forgejo authentication source named `caddy-security`
