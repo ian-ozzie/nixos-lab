@@ -23,7 +23,7 @@ let
     netbird-server = import ./netbird-server.nix;
     ntfy-sh = import ./ntfy-sh.nix;
     openssh = import ./openssh.nix;
-    php-fpm-app = import ./php-fpm-app.nix;
+    php-app = import ./php-app;
     postgresql = import ./postgresql.nix;
     radicale = import ./radicale.nix;
     redis = import ./redis.nix;
