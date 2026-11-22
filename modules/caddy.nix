@@ -196,7 +196,7 @@ in
       enable = true;
       enableReload = lib.mkIf cfg.security.persistState false;
       environmentFile = lib.mkIf (cfg.environmentFile != null) cfg.environmentFile;
-      openFirewall = lib.mkDefault true;
+      openFirewall = lib.mkDefault false;
       package = lib.mkIf cfg.security.enable cfg.security.package;
 
       globalConfig = lib.mkIf cfg.security.enable ''
