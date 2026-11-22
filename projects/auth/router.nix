@@ -11,6 +11,8 @@
   ...
 }:
 let
+  portalLinks = project.portalLinks or [ ];
+
   cookieDomain =
     project.cookieDomain
       or (lib.concatStringsSep "." (lib.tail (lib.splitString "." project.hostName)));
@@ -45,6 +47,14 @@ in
           trust login redirect uri domain exact ${builtins.toJSON domain} path prefix /
           trust login redirect uri domain suffix ${builtins.toJSON ".${domain}"} path prefix /
         '') (project.trustedLoginRedirectDomains or [ cookieDomain ])}
+
+        ${lib.optionalString (portalLinks != [ ]) ''
+          ui {
+            links {
+              ${lib.concatStringsSep "\n" portalLinks}
+            }
+          }
+        ''}
       '';
     };
 
