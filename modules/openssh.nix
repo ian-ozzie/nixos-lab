@@ -25,6 +25,7 @@ in
       openssh = {
         authorizedKeysInHomedir = lib.mkDefault false;
         enable = true;
+        openFirewall = lib.mkDefault false;
 
         hostKeys = [
           {
