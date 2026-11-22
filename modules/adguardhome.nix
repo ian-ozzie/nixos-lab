@@ -72,6 +72,11 @@ in
       description = "TTL in seconds for generated local records, also applied to blocked responses";
     };
 
+    upstreams = lib.mkOption {
+      default = [ ];
+      type = lib.types.listOf lib.types.str;
+    };
+
     wildcards = lib.mkOption {
       default = { };
       description = "Records to serve locally for each domain and its subdomains";
@@ -128,10 +133,10 @@ in
             cache_ttl_max = 14400;
             cache_ttl_min = 900;
             enable_dnssec = true;
-            fallback_dns = [ "https://9.9.9.9/dns-query" ];
+            fallback_dns = lib.optionals (cfg.upstreams == [ ]) [ "https://9.9.9.9/dns-query" ];
             port = 53;
             ratelimit_whitelist = resolverAddresses;
-            upstream_dns = [ "https://1.1.1.1/dns-query" ];
+            upstream_dns = if cfg.upstreams == [ ] then [ "https://1.1.1.1/dns-query" ] else cfg.upstreams;
 
             allowed_clients = lib.optionals (cfg.allowed != [ ]) (
               lib.unique (cfg.allowed ++ resolverAddresses)

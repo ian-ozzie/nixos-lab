@@ -25,18 +25,6 @@ in
       type = lib.types.listOf lib.types.str;
     };
 
-    localTTL = lib.mkOption {
-      default = 300;
-      type = lib.types.int;
-      description = "TTL in seconds for generated local records";
-    };
-
-    wildcards = lib.mkOption {
-      default = { };
-      description = "Records to serve locally, with a redirect for the zone";
-      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
-    };
-
     hosts = lib.mkOption {
       default = { };
       description = "Records to serve locally";
@@ -49,6 +37,23 @@ in
         ];
       };
     };
+
+    localTTL = lib.mkOption {
+      default = 300;
+      type = lib.types.int;
+      description = "TTL in seconds for generated local records";
+    };
+
+    upstreams = lib.mkOption {
+      default = [ ];
+      type = lib.types.listOf lib.types.str;
+    };
+
+    wildcards = lib.mkOption {
+      default = { };
+      description = "Records to serve locally, with a redirect for the zone";
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -59,6 +64,14 @@ in
       stateDir = lib.mkDefault "/data/services/unbound";
 
       settings = {
+        forward-zone = lib.mkIf (cfg.upstreams != [ ]) [
+          {
+            forward-addr = cfg.upstreams;
+            forward-first = false;
+            name = ".";
+          }
+        ];
+
         server = {
           access-control = map (address: "${address} allow") cfg.allowed;
           interface = cfg.bind;

@@ -12,6 +12,7 @@ let
       bind
       hosts
       localTTL
+      upstreams
       wildcards
       ;
 
@@ -43,17 +44,6 @@ in
       type = lib.types.listOf lib.types.str;
     };
 
-    localTTL = lib.mkOption {
-      default = 300;
-      type = lib.types.int;
-      description = "TTL in seconds for generated local records";
-    };
-
-    wildcards = lib.mkOption {
-      default = { };
-      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
-    };
-
     hosts = lib.mkOption {
       default = { };
       description = "records to server locally";
@@ -65,6 +55,22 @@ in
           "fd00::10"
         ];
       };
+    };
+
+    localTTL = lib.mkOption {
+      default = 300;
+      type = lib.types.int;
+      description = "TTL in seconds for generated local records";
+    };
+
+    upstreams = lib.mkOption {
+      default = [ ];
+      type = lib.types.listOf lib.types.str;
+    };
+
+    wildcards = lib.mkOption {
+      default = { };
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
     };
   };
 
