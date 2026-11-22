@@ -91,7 +91,7 @@ in
         "listen.mode" = "0600";
         "listen.owner" = caddy.user;
         "php_admin_flag[log_errors]" = true;
-        "php_admin_value[error_log]" = "stderr";
+        "php_admin_value[error_log]" = "syslog";
         "pm" = "dynamic";
         "pm.max_children" = 4;
         "pm.max_requests" = 500;
