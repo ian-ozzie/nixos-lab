@@ -34,6 +34,11 @@ in
       default = null;
       type = lib.types.nullOr lib.types.externalPath;
     };
+
+    waitForStartup = lib.mkOption {
+      default = false;
+      type = lib.types.bool;
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -104,6 +109,22 @@ in
 
       services = {
         ${client.service.name}.serviceConfig.ReadWritePaths = [ client.dir.state ];
+
+        "${client.service.name}-ready" = lib.mkIf cfg.waitForStartup {
+          requires = [ "${client.service.name}.service" ];
+          after = [ "${client.service.name}.service" ];
+
+          serviceConfig = {
+            Type = "oneshot";
+            TimeoutStartSec = "60s";
+          };
+
+          script = ''
+            until ${lib.getExe client.wrapper} status --check startup; do
+              sleep 1
+            done
+          '';
+        };
 
         "${client.service.name}-login" = lib.mkIf client.login.enable {
           serviceConfig.ReadWritePaths = [ client.dir.state ];
